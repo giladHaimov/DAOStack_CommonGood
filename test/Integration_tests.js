@@ -598,15 +598,27 @@ contract("Project", (accounts_) => {
 
 
    async function verifyProjectMayNotBeReinitialized( milestones_) {
+          let projectInitParams = {
+                       projectTeamWallet: addr1,
+                       vault: addr1,
+                       milestones: milestones_,
+                       projectToken: addr1,
+                       platformCutPromils: 100,
+                       minPledgedSum: 1000000,
+                       onChangeExitGracePeriod: 100000,
+                       pledgerGraceExitWaitTime: 10000,
+                       paymentToken: paymentTokenInstance.address
+          };
+
           if ( !revertReasonSupported) {
               await expectRevert.unspecified(
-                   thisProjInstance.initialize( addr1, addr1, milestones_, addr1, 100, 1000000, 100000, 10000, paymentTokenInstance.address)
+                   thisProjInstance.initialize( projectInitParams)
               );
 
           } else {
               const expectedError = 'can only be initialized once';
               await expectRevert(
-                       thisProjInstance.initialize( addr1, addr1, milestones_, addr1, 100, 1000000, 100000, 10000, paymentTokenInstance.address),
+                       thisProjInstance.initialize( projectInitParams),
                        expectedError );
            }
    }
@@ -806,7 +818,7 @@ contract("Project", (accounts_) => {
 
         const teamBalance_0 = await getPaymentTokenBalance( thisTeamWallet);
 
-        let initPledgeSum = await addAllPledgers(); // addr3 + addr4
+        await addAllPledgers(); // addr3 + addr4
 
         await setMilestoneResultToSuccess( 0, addr2);
 
@@ -1033,7 +1045,7 @@ contract("Project", (accounts_) => {
 
       const initBalance_ = await getPaymentTokenBalance( addr3);
 
-      let pledge_1 = await issueNewPledge( PLEDGE_SUM_4, addr3);
+      await issueNewPledge( PLEDGE_SUM_4, addr3);
 
       let expected_balance_1 = new BN( initBalance_).sub( new BN( PLEDGE_SUM_4));
       await verifyPaymentTokenBalance( addr3, expected_balance_1);
@@ -1050,7 +1062,7 @@ contract("Project", (accounts_) => {
 
       await printVaultBalance();
 
-      let pledge_2 = await issueNewPledge( PLEDGE_SUM_5, addr3);
+      await issueNewPledge( PLEDGE_SUM_5, addr3);
 
       let expected_balance_2 = expected_balance_1.sub( new BN( PLEDGE_SUM_5));
       await verifyPaymentTokenBalance( addr3, expected_balance_2);
@@ -1061,14 +1073,12 @@ contract("Project", (accounts_) => {
 
       await verifyNumEventsForPledger( addr4, 0);
 
-      let pledge_3 = await issueNewPledge( PLEDGE_SUM_4, addr4);
+      await issueNewPledge( PLEDGE_SUM_4, addr4);
 
       await verifyNumEventsForPledger( addr4, 1);
       await verifyNumPledgers(2);
 
       await verifyPledgeEventValueInEther( addr4, 0, PLEDGE_SUM_4);
-
-      return pledge_1.add( pledge_2).add( pledge_3);
   }
 
 
@@ -1233,11 +1243,20 @@ contract("Project", (accounts_) => {
 
          await verifyVaultBalanceEquals( 0); // all payment tokens moved to team wallet
 
+         await verifyAllMilestonesSucceeded();
+
          await verifyPledgerCannotReclaimProjFailureEther( addr2);
 
          await verifyNoFailureRecord();
 
          await verifyCannotAddPledgeToFinishedProject( PLEDGE_SUM_5, addr2);
+    }
+
+    async function verifyAllMilestonesSucceeded() {
+        const numAllMilestones = await thisProjInstance.getNumberOfMilestones();
+        const numSuccessfulMilestones = await thisProjInstance.getNumberOfSuccessfulMilestones();
+
+        assert.equal( numAllMilestones.toNumber(), numSuccessfulMilestones.toNumber(), "Successful project cannot have non-successful milestones");
     }
 
 

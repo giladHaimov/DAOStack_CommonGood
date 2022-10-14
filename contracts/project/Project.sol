@@ -20,14 +20,12 @@ import "../vault/IVault.sol";
 import "../utils/InitializedOnce.sol";
 import "./ProjectState.sol";
 import "./IProject.sol";
+import "./ProjectInitParams.sol";
 
 
 contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, InitializedOnce  {
 
     using SafeCast for uint;
-
-    //using SafeERC20 for IERC20;
-
 
 
     uint public constant MAX_NUM_SINGLE_EOA_PLEDGES = 20;
@@ -143,25 +141,10 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
      *
      * @event: none
      */
-    function initialize( address owner_, IVault projectVault_, Milestone[] memory milestones_, //@PUBFUNC //@CLONE
-                        IMintableOwnedERC20 projectToken_, uint platformCutPromils_,
-                        uint minPledgedSum_, uint onChangeExitGracePeriod_, uint pledgerGraceExitWaitTime_,
-                        address paymentTokenAddress_)
-                            external override  onlyIfNotInitialized {
-        markAsInitialized(owner_);
+    function initialize( ProjectInitParams memory params_) external override  onlyIfNotInitialized {
+        markAsInitialized( params_.projectTeamWallet);
 
-        _initialize( projectVault_, milestones_,
-                     projectToken_, platformCutPromils_, minPledgedSum_,
-                     onChangeExitGracePeriod_, pledgerGraceExitWaitTime_, paymentTokenAddress_);
-    }
-
-
-    function _initialize(  IVault projectVault_, Milestone[] memory milestones_,
-                           IMintableOwnedERC20 projectToken_, uint platformCutPromils_,
-                           uint minPledgedSum_, uint onChangeExitGracePeriod_, uint pledgerGraceExitWaitTime_,
-                           address paymentTokenAddress_) private {
-
-        require( paymentTokenAddress_ != address(0), "missing payment token");
+        require( params_.paymentToken != address(0), "missing payment token");
 
         platformAddr = msg.sender;
 
@@ -171,19 +154,19 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         projectEndTime = 0;
         current_endOfGracePeriod = 0;
         onFailureRefundParams =  OnFailureRefundParams( false, 0, 0);
-        paymentTokenAddress = paymentTokenAddress_;
+        paymentTokenAddress = params_.paymentToken;
 
         // make sure that the template contract does not contain pledges i.e. pledgerAddrToEventMap is empty
         require( numPledgersSofar == 0, "numPledgersSofar == 0");
         require( totalNumPledgeEvents == 0, "totalNumPledgeEvents == 0");
 
-        _updateProject( milestones_, minPledgedSum_);
+        _updateProject( params_.milestones, params_.minPledgedSum);
 
-        projectVault = projectVault_;
-        projectToken = projectToken_;
-        platformCutPromils = platformCutPromils_;
-        onChangeExitGracePeriod = onChangeExitGracePeriod_; 
-        pledgerGraceExitWaitTime = pledgerGraceExitWaitTime_;
+        projectVault = params_.vault;
+        projectToken = params_.projectToken;
+        platformCutPromils = params_.platformCutPromils;
+        onChangeExitGracePeriod = params_.onChangeExitGracePeriod;
+        pledgerGraceExitWaitTime = params_.pledgerGraceExitWaitTime;
 
     }
 
@@ -449,7 +432,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
  */ //@DOC4
     function onMilestoneOverdue(uint milestoneIndex_) external openForAll onlyIfProjectNotCompleted  {//@PUBFUNC: also notPaused??
 
-        uint initial_numCompleted = completedMilestoneIndexes.length;
+        uint initial_numCompleted = successfulMilestoneIndexes.length;
 
         Milestone storage milestone_ = milestoneArr[ milestoneIndex_];
 
@@ -461,7 +444,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
         _onProjectFailed();
 
-        require( completedMilestoneIndexes.length <= initial_numCompleted+1, "single milestone at most");
+        require( successfulMilestoneIndexes.length <= initial_numCompleted+1, "single milestone at most");
     }
 
     enum OnSuccessReward { TOKENS, NFT }
@@ -845,16 +828,16 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     //-------------- 
 
     function _updateProject(Milestone[] memory milestones_, uint minPledgedSum_) private {
-        // historical records (pledger list, completedMilestoneIndexes...) and immuables
+        // historical records (pledger list, successfulMilestoneIndexes...) and immuables
         // (projectVault, projectToken, platformCutPromils, onChangeExitGracePeriod, pledgerGraceExitWaitTime)
         // are not to be touched here
         _setMilestones(milestones_);
 
-        delete completedMilestoneIndexes; //@DETECT_PROJECT_SUCCESS
+        delete successfulMilestoneIndexes; //@DETECT_PROJECT_SUCCESS
 
         minPledgedSum = minPledgedSum_;
 
-        // //@gilad -- solve problem of correlating completedMilestoneIndexes with _new milesones list!
+        // //@gilad -- solve problem of correlating successfulMilestoneIndexes with _new milesones list!
     }
 
 }

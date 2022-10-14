@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../project/ProjectParams.sol";
+import "../project/ProjectInitParams.sol";
 import "../milestone/Milestone.sol";
 import "../milestone/MilestoneResult.sol";
 import "../token/CommonGoodProjectToken.sol";
@@ -18,9 +19,10 @@ import "../token/IMintableOwnedERC20.sol";
 import "../vault/IVault.sol";
 import "../project/IProject.sol";
 import "../libs/Sanitizer.sol";
+import "./BetaTestable.sol";
 
 
-abstract contract ProjectFactory is Ownable, Pausable {
+abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
 
     using Clones for address;
 
@@ -42,12 +44,10 @@ abstract contract ProjectFactory is Ownable, Pausable {
 
     //--------
 
-
-    bool public inBetaMode = true; //TODO
-
-    mapping( address => bool) public isBetaTester;
-
     mapping(address => bool) public approvedVaults;
+
+    uint public minNumMilestones;
+    uint public maxNumMilestones;
 
 
 
@@ -59,11 +59,20 @@ abstract contract ProjectFactory is Ownable, Pausable {
         _;
     }
 
+    modifier legalNumberOfMilestones( Milestone[] memory milestones_) {
+        require( milestones_.length >= minNumMilestones, "not enough milestones");
+        require( milestones_.length <= maxNumMilestones, "too many milestones");
+        _;
+    }
+
     //----
 
     constructor(address projectTemplate_, address vaultTemplate_) {
         projectTemplate = projectTemplate_;
         vaultTemplate = vaultTemplate_;
+        minNumMilestones = 1;
+        maxNumMilestones = 400;
+
     }
 
     event ApprovedPaymentTokenChanged( address indexed paymentToken, bool isLegal);
@@ -76,9 +85,8 @@ abstract contract ProjectFactory is Ownable, Pausable {
 
     event PledgerGraceExitWaitTimeChanged( uint newValue, uint oldValue);
 
-    event BetaModeChanged( bool indexed inBetaMode, bool indexed oldBetaMode);
-
-    event SetBetaTester( address indexed testerAddress, bool indexed isBetaTester);
+    event MliestoneLimitsChanged( uint new_minNumMilestones, uint indexed old_minNumMilestones,
+                                  uint new_maxNumMilestones, uint indexed old_maxNumMilestones );
     //---
 
     error ExternallyProvidedProjectVaultMustBeOwnedByPlatform( address vault_, address vaultOwner_);
@@ -112,18 +120,18 @@ abstract contract ProjectFactory is Ownable, Pausable {
  * @event: ProjectWasDeployed
  */
     //@DOC1
-    function createProject( ProjectParams memory params_, Milestone[] memory milestones_)
-                            external whenNotPaused { //@PUBFUNC
+    function createProject( ProjectParams memory params_, Milestone[] memory milestones_) external
+                                onlyValidBetaTester
+                                legalNumberOfMilestones( milestones_)
+                                whenNotPaused { //@PUBFUNC
 
         uint projectIndex_ = projectList.length;
 
         address projectTeamWallet_ = msg.sender;
 
-        require( !inBetaMode || isBetaTester[ projectTeamWallet_], "not a beta tester");
-
         require( approvedPaymentToken( params_.paymentToken), "payment token not approved");
 
-        Sanitizer._sanitizeMilestones(milestones_);
+        Sanitizer._sanitizeMilestones(milestones_, minNumMilestones, maxNumMilestones);
 
 
         //@gilad externl vault initially owned by platform address => after owned by project
@@ -157,9 +165,19 @@ abstract contract ProjectFactory is Ownable, Pausable {
         require( IVault(params_.projectVault).getOwner() == address(project_), "Vault must be owned by project");
 
 
-        project_.initialize( projectTeamWallet_, IVault(params_.projectVault), milestones_, projToken_,
-                             _getPlatformCutPromils(), params_.minPledgedSum,
-                             onChangeExitGracePeriod, pledgerGraceExitWaitTime, params_.paymentToken );
+        ProjectInitParams memory initParams_ = ProjectInitParams( {
+            projectTeamWallet: projectTeamWallet_,
+            vault: IVault(params_.projectVault),
+            milestones: milestones_,
+            projectToken: projToken_,
+            platformCutPromils: _getPlatformCutPromils(),
+            minPledgedSum: params_.minPledgedSum,
+            onChangeExitGracePeriod: onChangeExitGracePeriod,
+            pledgerGraceExitWaitTime: pledgerGraceExitWaitTime,
+            paymentToken: params_.paymentToken
+        });
+
+        project_.initialize( initParams_);
 
         require( project_.getOwner() == projectTeamWallet_, "Project must be owned by team");
         //-------------
@@ -218,17 +236,14 @@ abstract contract ProjectFactory is Ownable, Pausable {
         return addressToProject[ projectAddr_].getProjectStartTime() > 0;
     }
 
-/*
- * @title setBetaMode()
- *
- * @dev Set beta mode flag. When in beta mode only beta users are allowed as project teams
- *
- * @event: BetaModeChanged
- */
-    function setBetaMode(bool inBetaMode_) external onlyOwner { //@PUBFUNC
-        bool oldMode = inBetaMode;
-        inBetaMode = inBetaMode_;
-        emit BetaModeChanged( inBetaMode, oldMode);
+    function setMliestoneLimits( uint new_minNumMilestones, uint new_maxNumMilestones) external onlyOwner { //@PUBFUNC
+        uint old_minNumMilestones = minNumMilestones;
+        uint old_maxNumMilestones = maxNumMilestones;
+
+        minNumMilestones = new_minNumMilestones;
+        maxNumMilestones = new_maxNumMilestones;
+
+        emit MliestoneLimitsChanged( minNumMilestones, old_minNumMilestones, maxNumMilestones, old_maxNumMilestones);
     }
 
 
@@ -238,19 +253,6 @@ abstract contract ProjectFactory is Ownable, Pausable {
         emit ApprovedPaymentTokenChanged( paymentTokenAddr_, isApproved_);
     }
 
-
-/*
- * @title setBetaTester()
- *
- * @dev Set a beta tester boolean flag. This call allows both approving and disapproving a beta tester address
- *
- * @event: SetBetaTester
- */
-    function setBetaTester(address testerAddress, bool isBetaTester_) external onlyOwner { //@PUBFUNC
-        //require( inBetaMode); -- not needed
-        isBetaTester[ testerAddress] = isBetaTester_;
-        emit SetBetaTester( testerAddress, isBetaTester_);
-    }
 
 /*
  * @title setProjectChangeGracePeriod()

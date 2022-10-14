@@ -7,12 +7,12 @@ import "../token/IMintableOwnedERC20.sol";
 import "../vault/IVault.sol";
 import "../milestone/Milestone.sol";
 import "./ProjectState.sol";
+import "./ProjectInitParams.sol";
+
 
 interface IProject {
 
-    function initialize( address owner_, IVault projectVault_, Milestone[] memory milestones_,
-                         IMintableOwnedERC20 projectToken_, uint platformCutPromils_, uint minPledgedSum_,
-                         uint onChangeExitGracePeriod_, uint pledgerGraceExitWaitTime_, address paymentToken_) external;
+    function initialize( ProjectInitParams memory params_) external;
 
     function getOwner() external view returns(address);
 

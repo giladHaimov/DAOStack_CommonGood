@@ -24,7 +24,7 @@ abstract contract MilestoneOwner {
 
     Milestone[] public milestoneArr;
 
-    uint[] public completedMilestoneIndexes;
+    uint[] public successfulMilestoneIndexes;
 
     address public paymentTokenAddress;
 
@@ -105,7 +105,7 @@ abstract contract MilestoneOwner {
                                                 external openForAll onlyIfProjectNotCompleted
                                                 onlyIfOnchain( milestoneIndex_) /*even if paused*/ { //@PUBFUNC
 
-        uint initial_numCompleted = completedMilestoneIndexes.length;
+        uint initial_numCompleted = successfulMilestoneIndexes.length;
 
         Milestone storage milestone_ = milestoneArr[milestoneIndex_];
 
@@ -117,7 +117,7 @@ abstract contract MilestoneOwner {
             emit OnchainMilestoneNotYetReached( milestoneIndex_);
         }
 
-        require( completedMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
+        require( successfulMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
     }
 
 
@@ -142,7 +142,7 @@ abstract contract MilestoneOwner {
                                 external onlyIfProjectNotCompleted onlyExternalApprover( milestoneIndex_)
                                 /*even if paused*/ { //@PUBFUNC
 
-        uint initial_numCompleted = completedMilestoneIndexes.length;
+        uint initial_numCompleted = successfulMilestoneIndexes.length;
 
         Milestone storage milestone_ = milestoneArr[milestoneIndex_];
 
@@ -152,7 +152,7 @@ abstract contract MilestoneOwner {
             _handleExternalApproverDecision( milestoneIndex_, milestone_, succeeded, reason);
         }
 
-        require( completedMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
+        require( successfulMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
     }
 
 
@@ -215,17 +215,21 @@ abstract contract MilestoneOwner {
         _setMilestoneResult( milestone_, MilestoneResult.SUCCEEDED);
 
         // add to completed arr
-        completedMilestoneIndexes.push( milestoneIndex_);
+        successfulMilestoneIndexes.push( milestoneIndex_);
 
         _transferMilestoneFundsToTeam( milestone_);
 
-        if (completedMilestoneIndexes.length == milestoneArr.length) { //@DETECT_PROJECT_SUCCESS
+        if (successfulMilestoneIndexes.length == milestoneArr.length) { //@DETECT_PROJECT_SUCCESS
             _onProjectSucceeded();
         }
 
         emit MilestoneSuccess( milestoneIndex_);
     }
 
+
+    function getNumberOfSuccessfulMilestones() external view returns(uint) {
+        return successfulMilestoneIndexes.length;
+    }
 
     function _transferMilestoneFundsToTeam( Milestone storage milestone_) private {
         uint value_ = milestone_.etherValue;

@@ -36,7 +36,6 @@ tokens:   https://www.youtube.com/watch?v=gc7e90MHvl8
 ---
 
     IProject IPlatform + supprit-itf
-    beta mode
     clone contract for existing template address
 
     https://www.youtube.com/watch?v=LZ3XPhV7I1Q
@@ -86,8 +85,10 @@ library Sanitizer {
     error AmbiguousMilestoneApprover(uint index, address externalApprover, uint fundingTarget, uint numPledgers);
 
 
-    function _sanitizeMilestones(Milestone[] memory milestones_) internal pure {
+    function _sanitizeMilestones( Milestone[] memory milestones_, uint minNumMilestones_, uint maxNumMilestones_) internal pure {
         // assuming low milestone count
+        require( milestones_.length >= minNumMilestones_, "not enough milestones");
+        require( milestones_.length <= maxNumMilestones_, "too many milestones");
         for (uint i = 0; i < milestones_.length; i++) {
             _validateApprover(i, milestones_[i].milestoneApprover);
             milestones_[i].result = MilestoneResult.UNRESOLVED;
