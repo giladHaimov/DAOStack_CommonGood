@@ -260,7 +260,7 @@ abstract contract MilestoneOwner {
 
         _verifyUnresolved( milestoneIndex_, milestone_); // must check first!
 
-        if (block.timestamp > milestone_.dueDate + DUE_DATE_GRACE_PERIOD) {
+        if (milestoneIsOverdue( milestoneIndex_)) {
             _setMilestoneResult( milestone_,  MilestoneResult.FAILED);
             emit MilestoneIsOverdueEvent(milestoneIndex_, milestone_.dueDate, block.timestamp);
             return true;
@@ -268,7 +268,6 @@ abstract contract MilestoneOwner {
 
         return false;
     }
-
 
     function _onMilestoneFailure( Milestone storage milestone_) private {
         _setMilestoneResult( milestone_,  MilestoneResult.FAILED);
@@ -313,12 +312,14 @@ abstract contract MilestoneOwner {
         return milestoneArr[milestoneIndex].prereqInd;
     }
 
-    function getMilestoneIsOverdueStatus(uint milestoneIndex) external view returns(bool) {
-        return milestoneArr[ milestoneIndex].dueDate < block.timestamp;
-    }
-
     function backdoor_markMilestoneAsOverdue(uint milestoneIndex) external { //TODO @gilad hhhh remove after testing!!!!
         milestoneArr[ milestoneIndex].dueDate = block.timestamp.toUint32() - DUE_DATE_GRACE_PERIOD - 1;
+    }
+
+
+    function milestoneIsOverdue( uint milestoneIndex_) public view returns(bool) { //hhh use it
+        // no action taken, just check
+        return block.timestamp > (milestoneArr[ milestoneIndex_].dueDate + DUE_DATE_GRACE_PERIOD);
     }
 
     function getMilestoneOverdueTime(uint milestoneIndex) external view returns(uint) {
