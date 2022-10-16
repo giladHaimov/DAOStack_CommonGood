@@ -40,7 +40,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
     mapping(address => bool) public isApprovedPaymentToken;
 
 
-    IProject[] public projectList;
+    address[] public projectAddresses; // all created projects - either in-progress or completed
 
     //--------
 
@@ -125,13 +125,13 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
                                 legalNumberOfMilestones( milestones_)
                                 whenNotPaused { //@PUBFUNC
 
-        uint projectIndex_ = projectList.length;
+        uint projectIndex_ = projectAddresses.length;
 
         address projectTeamWallet_ = msg.sender;
 
         require( approvedPaymentToken( params_.paymentToken), "payment token not approved");
 
-        Sanitizer._sanitizeMilestones(milestones_, minNumMilestones, maxNumMilestones);
+        Sanitizer._sanitizeMilestones(milestones_, block.timestamp, minNumMilestones, maxNumMilestones);
 
 
         //@gilad externl vault initially owned by platform address => after owned by project
@@ -185,7 +185,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
 
         addressToProject[ address(project_)] = project_;
 
-        projectList.push( project_);
+        projectAddresses.push( address(project_));
 
         projToken_.setConnectedProject( project_);
 
@@ -285,8 +285,8 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
         emit PledgerGraceExitWaitTimeChanged( pledgerGraceExitWaitTime, oldWaitTime_);
     }
 
-     function numProjects() external view returns(uint) {
-         return projectList.length;
+     function numProjects() external view returns(uint) { //hhh use
+         return projectAddresses.length;
      }
 
     //------------

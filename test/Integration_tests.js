@@ -256,9 +256,9 @@ contract("Project", (accounts_) => {
           let ts_ = await platformInst.getBlockTimestamp();
 
           milestones_ = [
-                { milestoneApprover: extApprover_2, prereqInd: -1, etherValue: zeroEth,         result: 0, dueDate: addSecs(ts_, 100) },
-                { milestoneApprover: extApprover_3, prereqInd: -1, etherValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 100) },
-                { milestoneApprover: extApprover_4, prereqInd: -1, etherValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 100) }
+                { milestoneApprover: extApprover_2, prereqInd: -1, etherValue: zeroEth,         result: 0, dueDate: addSecs(ts_, 200000) },
+                { milestoneApprover: extApprover_3, prereqInd: -1, etherValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+                { milestoneApprover: extApprover_4, prereqInd: -1, etherValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
           ];
 
           const projectAddr_ = await invokeCreateProject( params_, milestones_, addr1);

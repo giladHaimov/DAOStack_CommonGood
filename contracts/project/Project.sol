@@ -21,6 +21,7 @@ import "../utils/InitializedOnce.sol";
 import "./ProjectState.sol";
 import "./IProject.sol";
 import "./ProjectInitParams.sol";
+import "../libs/Sanitizer.sol";
 
 
 contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, InitializedOnce  {
@@ -827,15 +828,19 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     //-------------- 
 
-    function _updateProject(Milestone[] memory milestones_, uint minPledgedSum_) private {
+    function _updateProject( Milestone[] memory newMilestones, uint newMinPledgedSum) private {
         // historical records (pledger list, successfulMilestoneIndexes...) and immuables
         // (projectVault, projectToken, platformCutPromils, onChangeExitGracePeriod, pledgerGraceExitWaitTime)
         // are not to be touched here
-        _setMilestones(milestones_);
+
+        // gilad: avoid min/max NumMilestones validations while in update
+        Sanitizer._sanitizeMilestones( newMilestones, block.timestamp, 0, 0);
+
+        _setMilestones( newMilestones);
 
         delete successfulMilestoneIndexes; //@DETECT_PROJECT_SUCCESS
 
-        minPledgedSum = minPledgedSum_;
+        minPledgedSum = newMinPledgedSum;
 
         // //@gilad -- solve problem of correlating successfulMilestoneIndexes with _new milesones list!
     }
