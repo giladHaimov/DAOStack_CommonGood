@@ -21,9 +21,8 @@
  */
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-//var HDWalletProvider = require("truffle-hdwallet-provider");
 const fs = require('fs');
-const mnemonic = fs.readFileSync("/Users/GiladMac/secret_code.txt").toString().trim();
+const mnemonic = fs.readFileSync("../secret.txt").toString().trim();
 
 module.exports = {
 
