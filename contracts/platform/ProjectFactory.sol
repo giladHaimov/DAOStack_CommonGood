@@ -102,7 +102,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
     error InvalidVault(address vault);
     //----
 
-    function approvedPaymentToken(address paymentTokenAddr_) private view returns(bool) {
+    function _approvedPaymentToken(address paymentTokenAddr_) private view returns(bool) {
         return paymentTokenAddr_ != address(0) && isApprovedPaymentToken[ paymentTokenAddr_];
     }
 
@@ -129,7 +129,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
 
         address projectTeamWallet_ = msg.sender;
 
-        require( approvedPaymentToken( params_.paymentToken), "payment token not approved");
+        require( _approvedPaymentToken( params_.paymentToken), "payment token not approved");
 
         Sanitizer._sanitizeMilestones(milestones_, block.timestamp, minNumMilestones, maxNumMilestones);
 
@@ -236,7 +236,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
         return addressToProject[ projectAddr_].getProjectStartTime() > 0;
     }
 
-    function setMliestoneLimits( uint new_minNumMilestones, uint new_maxNumMilestones) external onlyOwner { //@PUBFUNC
+    function setMilestoneMinMaxCounts( uint new_minNumMilestones, uint new_maxNumMilestones) external onlyOwner { //@PUBFUNC
         uint old_minNumMilestones = minNumMilestones;
         uint old_maxNumMilestones = maxNumMilestones;
 

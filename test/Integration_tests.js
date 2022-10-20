@@ -91,6 +91,15 @@ contract("Project", (accounts_) => {
       console.log("successful project test completed");
   });
 
+
+  it("create a project with large milestone count", async () => {
+
+      await createMultiMilestoneProject( 80);
+
+      console.log("successful large milestone count test completed");
+  });
+
+
   it("executes a failed project", async () => {
 
       await executeProjectLifecycle(false);
@@ -1080,6 +1089,42 @@ contract("Project", (accounts_) => {
 
       await verifyPledgeEventValueInEther( addr4, 0, PLEDGE_SUM_4);
   }
+
+  async function createMultiMilestoneProject( largeMilestoneCount) {
+        const zeroEth = 0;
+
+        let params_ = { tokenName: "tok332",
+                        tokenSymbol: "tk4",
+                        projectVault: ZERO_ADDR,
+                        paymentToken: paymentTokenInstance.address,
+                        minPledgedSum: MIN_PLEDGE_SUM,
+                        initialTokenSupply: 100*MILLION,
+                        projectToken: ZERO_ADDR };
+
+        let ts_ = await platformInst.getBlockTimestamp();
+
+        let milestones_ = [];
+
+        //await platformInst.setMilestoneMinMaxCounts( 1, largeMilestoneCount+1);
+
+        for (let i = 0; i < largeMilestoneCount; i++) {
+              milestones_[i] =
+                { milestoneApprover: extApprover_2, prereqInd: -1, etherValue: zeroEth, result: 0, dueDate: addSecs(ts_, 200000) }
+        }
+
+        const projectAddr_ = await invokeCreateProject( params_, milestones_, addr1);
+
+        const paymentTokenAddress = await thisProjInstance.getPaymentTokenAddress();
+        assert.equal( paymentTokenInstance.address, paymentTokenAddress, "bad paymentTokenAddress");
+
+        const actualNumMilestones_ = await thisProjInstance.getNumberOfMilestones();
+
+        assert.equal( actualNumMilestones_, largeMilestoneCount, "bad milestone count");
+
+        await verifyMinPledgeSum();
+
+        await verifyProjectMayNotBeReinitialized( milestones_);
+   }
 
 
    async function executeProjectLifecycle( projectShouldSucceed) {
