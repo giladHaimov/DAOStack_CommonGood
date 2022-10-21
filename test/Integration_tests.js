@@ -84,6 +84,15 @@ contract("Project", (accounts_) => {
         await createProjectContract();
    });
 
+
+//  it("Create a project", async () => {
+//       // to run: truffle test  --network goerli
+//
+//       // created in beforeEach()
+//      await verifyProjectMayNotBeReinitialized( milestones_);
+//  });
+
+
   it("executes a successful project", async () => {
 
       await executeProjectLifecycle(true);
@@ -183,14 +192,14 @@ contract("Project", (accounts_) => {
         }
 
         await mintPaymentTokenToAddress( addr1);
+
         await mintPaymentTokenToAddress( addr2);
+
         await mintPaymentTokenToAddress( addr3);
         await mintPaymentTokenToAddress( addr4);
 
         console.log(`projectTemplateInst: ${projectTemplateInst.address}`);
-
         console.log(`vault-2: ${vaultTemplateInst.address}`);
-
         console.log(`platform: ${platformInst.address}`);
 
         await platformInst.approvePaymentToken( paymentTokenInstance.address, true);
@@ -252,7 +261,7 @@ contract("Project", (accounts_) => {
 
         await loadAllContractInstances();
 
-          const zeroEth = 0;
+          const zeroPTok = 0;
 
           let params_ = { tokenName: "tok332",
                           tokenSymbol: "tk4",
@@ -265,9 +274,9 @@ contract("Project", (accounts_) => {
           let ts_ = await platformInst.getBlockTimestamp();
 
           milestones_ = [
-                { milestoneApprover: extApprover_2, prereqInd: -1, etherValue: zeroEth,         result: 0, dueDate: addSecs(ts_, 200000) },
-                { milestoneApprover: extApprover_3, prereqInd: -1, etherValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
-                { milestoneApprover: extApprover_4, prereqInd: -1, etherValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
+                { milestoneApprover: extApprover_2, prereqInd: -1, pTokValue: zeroPTok,        result: 0, dueDate: addSecs(ts_, 200000) },
+                { milestoneApprover: extApprover_3, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+                { milestoneApprover: extApprover_4, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
           ];
 
           const projectAddr_ = await invokeCreateProject( params_, milestones_, addr1);
@@ -279,6 +288,7 @@ contract("Project", (accounts_) => {
 
           await verifyProjectMayNotBeReinitialized( milestones_);
 
+
           let projectVaultAddr_ = await thisProjInstance.getVaultAddress();
           thisVaultInstance = await Vault.at( projectVaultAddr_);
 
@@ -287,11 +297,16 @@ contract("Project", (accounts_) => {
           await verifyActiveProject();
 
           await setPaymentTokenAllowanceForProject( addr1, ALLOWANCE_TO_PROJECT);
+
           await setPaymentTokenAllowanceForProject( addr2, ALLOWANCE_TO_PROJECT);
+
           await setPaymentTokenAllowanceForProject( addr3, ALLOWANCE_TO_PROJECT);
+
           await setPaymentTokenAllowanceForProject( addr4, ALLOWANCE_TO_PROJECT);
 
+
           lastTeamWalletBalance = await getPaymentTokenBalance( thisTeamWallet);
+
    }
 
 
@@ -470,9 +485,9 @@ contract("Project", (accounts_) => {
 
      async function printVaultBalance() {
          let balance = await thisProjInstance.getVaultBalance();
-         const etherValue = Web3.utils.fromWei( balance, COIN_UNIT);
+         const pTokValue = Web3.utils.fromWei( balance, COIN_UNIT);
          console.log("");
-         console.log(`===>  Vault balance in payment tokens : ${etherValue}`);
+         console.log(`===>  Vault balance in payment tokens : ${pTokValue}`);
      }
 
      async function printTeamWalletChanges() {
@@ -484,16 +499,16 @@ contract("Project", (accounts_) => {
              assert.fail("curr_balance < lastTeamWalletBalance");
 
              let diff = new BN(lastTeamWalletBalance).sub(new BN(curr_balance));
-             const etherValue = Web3.utils.fromWei( diff.toString(), COIN_UNIT);
+             const pTokValue = Web3.utils.fromWei( diff.toString(), COIN_UNIT);
              console.log("");
-             console.log(`===>  gas costs reduced from Team Wallet: ${etherValue} `);
+             console.log(`===>  gas costs reduced from Team Wallet: ${pTokValue} `);
              console.log("");
 
          } else {
              let diff = curr_balance.sub( new BN(lastTeamWalletBalance));
-             const etherValue = Web3.utils.fromWei( diff, COIN_UNIT);
+             const pTokValue = Web3.utils.fromWei( diff, COIN_UNIT);
              console.log("");
-             console.log(`===>  payment tokens added to Team Wallet: ${etherValue} Ether`);
+             console.log(`===>  payment tokens added to Team Wallet: ${pTokValue} PToks`);
              console.log("");
          }
 
@@ -509,10 +524,10 @@ contract("Project", (accounts_) => {
 
      async function printTeamWalletTotal( initTeamWallet) {
          let curr_balanceInWei = await getPaymentTokenBalance( thisTeamWallet);
-         let etherValue = await getPrintableTeamWalletTotal();
+         let pTokValue = await getPrintableTeamWalletTotal();
          console.log("");
-         console.log(`  Current Team Wallet payment token balance: ${etherValue} Ether`);
-         console.log(`  Initial Team Wallet payment token balance: ${initTeamWallet} Ether`);
+         console.log(`  Current Team Wallet payment token balance: ${pTokValue} PToks`);
+         console.log(`  Initial Team Wallet payment token balance: ${initTeamWallet} PToks`);
 
          lastTeamWalletBalance = curr_balanceInWei;
       }
@@ -717,6 +732,7 @@ contract("Project", (accounts_) => {
 
 
     async function setPaymentTokenAllowanceForProject( pledgerAddr, requestedAllowance) {
+
          let spender = thisProjInstance.address;
 
          await paymentTokenInstance.approve( spender, requestedAllowance, { from: pledgerAddr });
@@ -733,9 +749,9 @@ contract("Project", (accounts_) => {
          assert.equal( pledgerNumEvents, expectedNumEvents, "bad NumEvents");
     }
 
-    async function verifyPledgeEventValueInEther( pledgerAddr, eventIndex, expectedValueWei) {
+    async function verifyPledgeEventValueInPTok( pledgerAddr, eventIndex, expectedValueWei) {
         let pledgeEvent = await thisProjInstance.getPledgeEvent( pledgerAddr, eventIndex);
-        const printableValueEth = Web3.utils.fromWei( pledgeEvent[1], COIN_UNIT);
+        const printableValuePTok = Web3.utils.fromWei( pledgeEvent[1], COIN_UNIT);
 
         assert.equal( expectedValueWei, pledgeEvent[1],  "bad pledge-event value");
     }
@@ -803,7 +819,7 @@ contract("Project", (accounts_) => {
         // verify project still in progress
         await verifyActiveProject();
 
-        // verify eth deposit returned to pledger:
+        // verify PTok deposit returned to pledger:
         const expected_pledgerBalance = new BN(pre_pledgerBalance).add( new BN(actuallyRefunded_));
 
         verifyEqualValues( post_pledgerBalance, expected_pledgerBalance, "bad post pledge balance");
@@ -998,7 +1014,7 @@ contract("Project", (accounts_) => {
       verifyLeftEqualsSum( vaultBalance_1, vaultBalance_0, PLEDGE_SUM_2);
 
 
-      await verifyPledgeEventValueInEther( addrToAdd, 0, PLEDGE_SUM_2);
+      await verifyPledgeEventValueInPTok( addrToAdd, 0, PLEDGE_SUM_2);
 
       await verifyNumPledgers( numPledgersSofar+1);
 
@@ -1020,7 +1036,7 @@ contract("Project", (accounts_) => {
 
       await verifyNumEventsForPledger( addrToAdd, 2);
 
-      await verifyPledgeEventValueInEther( addrToAdd, 1, PLEDGE_SUM_3);
+      await verifyPledgeEventValueInPTok( addrToAdd, 1, PLEDGE_SUM_3);
 
 
       const teamBalance_4 = await getPaymentTokenBalance( thisTeamWallet);
@@ -1035,7 +1051,7 @@ contract("Project", (accounts_) => {
 
       verifyLeftEqualsSum( vaultBalance_5, vaultBalance_4, PLEDGE_SUM_4);
 
-      await verifyPledgeEventValueInEther( addrToAdd, 2, PLEDGE_SUM_4);
+      await verifyPledgeEventValueInPTok( addrToAdd, 2, PLEDGE_SUM_4);
 
       await verifyNumEventsForPledger( addrToAdd, 3);
 
@@ -1059,7 +1075,7 @@ contract("Project", (accounts_) => {
       let expected_balance_1 = new BN( initBalance_).sub( new BN( PLEDGE_SUM_4));
       await verifyPaymentTokenBalance( addr3, expected_balance_1);
 
-      await verifyPledgeEventValueInEther( addr3, 0, PLEDGE_SUM_4);
+      await verifyPledgeEventValueInPTok( addr3, 0, PLEDGE_SUM_4);
 
       await verifyNumPledgers(1);
 
@@ -1076,7 +1092,7 @@ contract("Project", (accounts_) => {
       let expected_balance_2 = expected_balance_1.sub( new BN( PLEDGE_SUM_5));
       await verifyPaymentTokenBalance( addr3, expected_balance_2);
 
-      await verifyPledgeEventValueInEther( addr3, 1, PLEDGE_SUM_5);
+      await verifyPledgeEventValueInPTok( addr3, 1, PLEDGE_SUM_5);
 
       await verifyNumPledgers(1);
 
@@ -1087,11 +1103,11 @@ contract("Project", (accounts_) => {
       await verifyNumEventsForPledger( addr4, 1);
       await verifyNumPledgers(2);
 
-      await verifyPledgeEventValueInEther( addr4, 0, PLEDGE_SUM_4);
+      await verifyPledgeEventValueInPTok( addr4, 0, PLEDGE_SUM_4);
   }
 
   async function createMultiMilestoneProject( largeMilestoneCount) {
-        const zeroEth = 0;
+        const zeroPTok = 0;
 
         let params_ = { tokenName: "tok332",
                         tokenSymbol: "tk4",
@@ -1109,7 +1125,7 @@ contract("Project", (accounts_) => {
 
         for (let i = 0; i < largeMilestoneCount; i++) {
               milestones_[i] =
-                { milestoneApprover: extApprover_2, prereqInd: -1, etherValue: zeroEth, result: 0, dueDate: addSecs(ts_, 200000) }
+                { milestoneApprover: extApprover_2, prereqInd: -1, pTokValue: zeroPTok, result: 0, dueDate: addSecs(ts_, 200000) }
         }
 
         const projectAddr_ = await invokeCreateProject( params_, milestones_, addr1);
@@ -1129,7 +1145,7 @@ contract("Project", (accounts_) => {
 
    async function executeProjectLifecycle( projectShouldSucceed) {
 
-        let initTeamWallet = await getPrintableTeamWalletTotal();
+        let initTeamWalletBalance = await getPrintableTeamWalletTotal();
 
         await printProjectParams();
 
@@ -1148,8 +1164,8 @@ contract("Project", (accounts_) => {
         await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr4);
         await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr2); // should also fail: not a pledger
 
-        await verifyPledgerCannotReclaimProjFailureEther( addr3); // project not failed
-        await verifyPledgerCannotReclaimProjFailureEther( addr2); // not a pledger
+        await verifyPledgerCannotReclaimProjFailurePTok( addr3); // project not failed
+        await verifyPledgerCannotReclaimProjFailurePTok( addr2); // not a pledger
 
         await verifyPledgerCannotObtainSuccessProjectTokens( addr3); // not successful project
         await verifyPledgerCannotObtainSuccessProjectTokens( addr2); // not a pledger
@@ -1159,7 +1175,7 @@ contract("Project", (accounts_) => {
 
         let milestoneResult_;
 
-        await setMilestoneResult( 0, true, addr2);
+        await setMilestoneResult( 0, true, addr2); //<==
 
         await printTeamWalletChanges();
 
@@ -1203,7 +1219,7 @@ contract("Project", (accounts_) => {
 
         await printVaultBalance();
 
-        await printTeamWalletTotal(initTeamWallet);
+        await printTeamWalletTotal(initTeamWalletBalance);
    }
 
 
@@ -1224,7 +1240,7 @@ contract("Project", (accounts_) => {
          let vaultBalance = await thisProjInstance.getVaultBalance();
          console.log(`aaaa pre ${vaultBalance} `);
 
-         // proj now failed- pledgers may sak for ether refund from what remains in Vault
+         // proj now failed- pledgers may sak for PTok refund from what remains in Vault
          onProjectFailurePledgerRefund( addr4);
 
          vaultBalance = await thisProjInstance.getVaultBalance();
@@ -1235,7 +1251,7 @@ contract("Project", (accounts_) => {
          vaultBalance = await thisProjInstance.getVaultBalance();
          console.log(`aaaa after addr3: ${vaultBalance} `);
 
-         await verifyPledgerCannotReclaimProjFailureEther( addr2); // not a pledger
+         await verifyPledgerCannotReclaimProjFailurePTok( addr2); // not a pledger
    }
 
 
@@ -1275,9 +1291,9 @@ contract("Project", (accounts_) => {
    async function verifyActiveProject() {
          await verifyProjectState( PROJECT_IN_PROGRESS);
 
-         await verifyPledgerCannotReclaimProjFailureEther( addr2);
+         await verifyPledgerCannotReclaimProjFailurePTok( addr2);
 
-         verifyPledgerCannotObtainSuccessProjectTokens( addr2);
+         await verifyPledgerCannotObtainSuccessProjectTokens( addr2);
 
          await verifyNoFailureRecord();
     }
@@ -1290,7 +1306,7 @@ contract("Project", (accounts_) => {
 
          await verifyAllMilestonesSucceeded();
 
-         await verifyPledgerCannotReclaimProjFailureEther( addr2);
+         await verifyPledgerCannotReclaimProjFailurePTok( addr2);
 
          await verifyNoFailureRecord();
 
@@ -1316,8 +1332,12 @@ contract("Project", (accounts_) => {
             await transferProjectTokensToPledgerOnProjectSuccess( addr2);
          }
 
-         verifyPledgerCannotObtainSuccessProjectTokens( addr3); // pledger cannot fetch tokens twice
+         // pledger cannot fetch tokens twice
+         verifyPledgerCannotObtainSuccessProjectTokens( addr3);
+         verifyPledgerCannotObtainSuccessProjectTokens( addr4);
+         verifyPledgerCannotObtainSuccessProjectTokens( addr2);
     }
+
 
     async function verifyCannotAddPledgeToFinishedProject( pledgeSumWei, pledgerAddr) {
         try {
@@ -1337,7 +1357,7 @@ contract("Project", (accounts_) => {
          }
     }
 
-    async function verifyPledgerCannotReclaimProjFailureEther( pldegerddr) {
+    async function verifyPledgerCannotReclaimProjFailurePTok( pldegerddr) {
         try {
             await thisProjInstance.onProjectFailurePledgerRefund({from: pldegerddr});
             assert.fail( "should fail when project not failed");

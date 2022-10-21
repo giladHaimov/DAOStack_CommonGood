@@ -100,7 +100,7 @@ contract Platform is ProjectFactory, IPlatform, /*Ownable, Pausable,*/ Reentranc
 /*
  * @title transferFundsToPlatformOwner
  *
- * @dev Transfer Ether funds from platform contract to platform owner
+ * @dev Transfer payment-token funds from platform contract to platform owner
  *
  * @event: PlatformFundTransferToOwner
  */
@@ -139,11 +139,11 @@ contract Platform is ProjectFactory, IPlatform, /*Ownable, Pausable,*/ Reentranc
     /*
      * @title receive()
      *
-     * @dev Allow a valid project (only) to pass ether funds to platform contract
+     * @dev Allow a valid project (only) to pass payment-token to platform contract
      *
      * @event: PlatformCutReceived
      */
-    function onReceivePaymentTokens( address tokenAddress_, uint numTokens_) external override onlyValidProject { //@PUBFUNC //@EtherTransfer
+    function onReceivePaymentTokens( address tokenAddress_, uint numTokens_) external override onlyValidProject { //@PUBFUNC //@PTokTransfer
         numPaymentTokensByTokenAddress[ tokenAddress_] += numTokens_;
         emit PlatformCutReceived( msg.sender, numTokens_);
     }

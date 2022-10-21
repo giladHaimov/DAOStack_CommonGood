@@ -13,5 +13,5 @@ struct Milestone {
     uint32 dueDate;
     int32 prereqInd;
 
-    uint etherValue;
+    uint pTokValue;
 }

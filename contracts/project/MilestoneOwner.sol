@@ -232,7 +232,7 @@ abstract contract MilestoneOwner {
     }
 
     function _transferMilestoneFundsToTeam( Milestone storage milestone_) private {
-        uint value_ = milestone_.etherValue;
+        uint value_ = milestone_.pTokValue;
 
         uint platformCut_ = _calcPlatformCut(value_);
 
@@ -282,7 +282,7 @@ abstract contract MilestoneOwner {
 
 
     function _verifyEnoughFundsInVault(uint milestoneIndex) private view {
-        uint milestoneValue =  milestoneArr[ milestoneIndex].etherValue;
+        uint milestoneValue =  milestoneArr[ milestoneIndex].pTokValue;
         uint fundsInVault_ = _getProjectVault().vaultBalance();
         require( fundsInVault_ >= milestoneValue, "not enough funds in vault");
         //TODO >> consider problem of e.g. number-of-pledgers milestone completed with not enough funds in vault
@@ -317,7 +317,7 @@ abstract contract MilestoneOwner {
     }
 
 
-    function milestoneIsOverdue( uint milestoneIndex_) public view returns(bool) { //hhh use it
+    function milestoneIsOverdue( uint milestoneIndex_) public view returns(bool) {
         // no action taken, just check
         return block.timestamp > (milestoneArr[ milestoneIndex_].dueDate + DUE_DATE_GRACE_PERIOD);
     }
@@ -332,7 +332,7 @@ abstract contract MilestoneOwner {
     }
 
     function getMilestoneValueInPaymentTokens(uint milestoneIndex) external view returns(uint) {
-        return milestoneArr[milestoneIndex].etherValue;
+        return milestoneArr[milestoneIndex].pTokValue;
     }
 
     //-----

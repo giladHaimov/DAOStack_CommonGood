@@ -66,8 +66,13 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     struct OnFailureRefundParams {
         bool exists;
-        uint totalEthInVault;
-        uint totalAllPledgerEth;
+        uint totalPTokInVault;
+        uint totalAllPledgerPTok;
+    }
+
+    modifier openForNewPledges() {
+        _requireNotPaused();
+        _;
     }
 
     modifier onlyIfExeedsMinPledgeSum( uint numPaymentTokens_) {
@@ -77,7 +82,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     modifier onlyIfSenderHasSufficientTokenBalance( uint numPaymentTokens_) {
         uint tokenBalanceOfPledger_ = IERC20( paymentTokenAddress).balanceOf( msg.sender);
-        require( tokenBalanceOfPledger_ >= numPaymentTokens_, "insufficient balance for pledger");
+        require( tokenBalanceOfPledger_ >= numPaymentTokens_, "pledger has insufficient token balance");
         _;
     }
 
@@ -200,7 +205,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     event TeamWalletChanged(address newWallet, address oldWallet);
 
-    event OnFinalEthRefundOfPledger( address indexed pledgerAddr_, uint32 pledgerEnterTime, uint refundSum_);
+    event OnFinalPTokRefundOfPledger( address indexed pledgerAddr_, uint32 pledgerEnterTime, uint refundSum_);
 
     event OnProjectSucceeded(address indexed projectAddress, uint endTime);
 
@@ -225,8 +230,6 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     error OnlyOwnerOrDelegateCanPerformAction(address msgSender, address owner, address delegate);
 
     error PledgerMinRequirementNotMet(address addr, uint value, uint minValue);
-
-    error FailedToTransferEthFromProject(address destAddr, uint value_);
 
     error OperationCannotBeAppliedToRunningProject(ProjectState projectState);
 
@@ -279,7 +282,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 /*
  * @title setMinPledgedSum()
  *
- * @dev sets the minimal amount of ether deposit for future pledgers. No effect on existing pledgers
+ * @dev sets the minimal amount of payment-tokens deposit for future pledgers. No effect on existing pledgers
  *
  * @event: MinPledgedSumWasSet
  */
@@ -341,9 +344,9 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
      * @title newPledge()
      *
      * @dev allow a _new pledger to enter the project
-     *  Payable method issued by the pledger with passed ether sum >= minPledgedSum
-     *  Creates a pledger entry (if first time) and adds a plede event containing ether sum and date
-     *  All incoming ether will be moved to project vault
+     *  This method is issued by the pledger with passed payment-token sum >= minPledgedSum
+     *  Creates a pledger entry (if first time) and adds a plede event containing payment-token sum and date
+     *  All incoming payment-token will be moved to project vault
      *
      *  Note: This function will NOT check for on-chain target completion (num-pledger, pledged-total)
      *         since that will require costly milestone iteration.
@@ -359,11 +362,11 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
      * @CROSS_REENTRY_PROTECTION
      */ //@DOC2
     function newPledge(uint numPaymentTokens_, address paymentTokenAddr_)
-                                        external openForAll whenNotPaused
+                                        external openForAll openForNewPledges
                                         onlyIfExeedsMinPledgeSum( numPaymentTokens_)
                                         onlyIfSenderHasSufficientTokenBalance( numPaymentTokens_)
                                         onlyIfSufficientTokenAllowance( numPaymentTokens_)
-                                        onlyIfProjectNotCompleted nonReentrant { //@PUBFUNC //@EtherTransfer //@PLEDGER
+                                        onlyIfProjectNotCompleted nonReentrant { //@PUBFUNC //@PTokTransfer //@PLEDGER
         address newPledgerAddr_ = msg.sender;
 
         require( paymentTokenAddr_ == paymentTokenAddress, "bad payment token");
@@ -529,7 +532,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     /*
      * @title onProjectFailurePledgerRefund()
      *
-     * @dev Refund pledger with its proportion of ether from team vault on failed project. Called by pledger
+     * @dev Refund pledger with its proportion of payment-token from team vault on failed project. Called by pledger
      * @sideeffect: remove pledger record
      *
      * @event: ProjectFailurePledgerRefund
@@ -539,20 +542,20 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
                                     onlyIfPledger onlyIfProjectFailed
                                     nonReentrant /*pledgerWasNotRefunded*/ { //@PUBFUNC //@PLEDGER
 
-        //@PLEDGERS_CAN_WITHDRAW_ETH
+        //@PLEDGERS_CAN_WITHDRAW_PTOK
         address pledgerAddr_ = msg.sender;
 
         require( onFailureRefundParams.exists, "onFailureRefundParams not set");
-        require( onFailureRefundParams.totalAllPledgerEth > 0, "no refunds");
+        require( onFailureRefundParams.totalAllPledgerPTok > 0, "no refunds");
 
-        uint pledgerTotalEth_ = calcPledgerTotalInvestment( pledgerAddrToEventMap[ pledgerAddr_]);
+        uint pledgerTotalPTok_ = calcPledgerTotalInvestment( pledgerAddrToEventMap[ pledgerAddr_]);
 
 
-        //zzzz avoid race condition by using precalc onFailureRefundParams.totalEthInVault
-        uint shouldBeRefunded_ = (pledgerTotalEth_ * onFailureRefundParams.totalEthInVault) /
-                                        onFailureRefundParams.totalAllPledgerEth;
+        //@gilad avoid race condition by using precalc onFailureRefundParams.totalPTokInVault
+        uint shouldBeRefunded_ = (pledgerTotalPTok_ * onFailureRefundParams.totalPTokInVault) /
+                                        onFailureRefundParams.totalAllPledgerPTok;
 
-        uint actuallyRefunded_ = _etherRefundToPledger( pledgerAddr_, shouldBeRefunded_);
+        uint actuallyRefunded_ = _pTokRefundToPledger( pledgerAddr_, shouldBeRefunded_);
 
         emit ProjectFailurePledgerRefund( pledgerAddr_, shouldBeRefunded_, actuallyRefunded_);
 
@@ -571,7 +574,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     /*
      * @title onGracePeriodPledgerRefund()
      *
-     * @dev called by pledger to request full ether refund during grace period
+     * @dev called by pledger to request full payment-token refund during grace period
      *  Will only be allowed if pledger pledgerExitAllowedStartTime matches Tx time
      *  At Tx successful end the pledger record will be removed form project
      *  Note: that this service will not be available if project has completed, even if before end of grace period
@@ -595,9 +598,9 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
         projectVault.decreaseTotalDepositsOnPledgerGraceExit( pledgerAddrToEventMap[ pledgerAddr_]);
 
-        uint shouldBeRefunded_ = calcOnGracePeriodEtherRefund( pledgerAddr_);
+        uint shouldBeRefunded_ = calcOnGracePeriodPTokRefund( pledgerAddr_);
 
-        uint actuallyRefunded_ = _etherRefundToPledger( pledgerAddr_, shouldBeRefunded_);
+        uint actuallyRefunded_ = _pTokRefundToPledger( pledgerAddr_, shouldBeRefunded_);
 
         emit GracePeriodPledgerRefund( pledgerAddr_, shouldBeRefunded_, actuallyRefunded_);
 
@@ -672,24 +675,24 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     }
 
 
-    function calcOnGracePeriodEtherRefund( address pledgerAddr_) public view returns(uint) {
+    function calcOnGracePeriodPTokRefund( address pledgerAddr_) public view returns(uint) {
 
         PledgeEvent[] storage pledges_ = pledgerAddrToEventMap[ pledgerAddr_];
 
-        uint etherRefund_ = 0;
+        uint pTokRefund_ = 0;
         for (uint i = 0; i < pledges_.length; i++) {
-            etherRefund_ += _TODO_graceEthRefundForSinglePledge( pledges_[i], etherRefund_);
+            pTokRefund_ += _TODO_gracePTokRefundForSinglePledge( pledges_[i], pTokRefund_);
         }
-        return etherRefund_;
+        return pTokRefund_;
     }
 
-    function _TODO_graceEthRefundForSinglePledge( PledgeEvent storage pledge_, uint alreadyRefunded_)
+    function _TODO_gracePTokRefundForSinglePledge( PledgeEvent storage pledge_, uint alreadyRefunded_)
                                                       private view returns(uint) {
-        return _simpleEtherRefundForSinglePledge( pledge_, alreadyRefunded_);
+        return _simplePTokRefundForSinglePledge( pledge_, alreadyRefunded_);
     }
 
 
-    function _simpleEtherRefundForSinglePledge( PledgeEvent storage pledge_, uint alreadyRefunded_)
+    function _simplePTokRefundForSinglePledge( PledgeEvent storage pledge_, uint alreadyRefunded_)
                                                 private view returns(uint) {
 
         // hhhh use bonding curve calculation with projectStartTime & projectEndTime params
@@ -697,19 +700,19 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         //      https://medium.com/hackernoon/more-price-functions-for-token-bonding-curves-d42b325ca14b
         //      https://medium.com/coinmonks/token-bonding-curves-explained-7a9332198e0e
 
-        uint etherInVault = projectVault.vaultBalance() - alreadyRefunded_;
+        uint paymentTokenInVault = projectVault.vaultBalance() - alreadyRefunded_;
         require( totalNumPledgeEvents > 0, "bad numActivePledgers");
-        return etherInVault / totalNumPledgeEvents;
+        return paymentTokenInVault / totalNumPledgeEvents;
     }
 
 
-    function _etherRefundToPledger( address pledgerAddr_, uint shouldBeRefunded_) private returns(uint) {
+    function _pTokRefundToPledger( address pledgerAddr_, uint shouldBeRefunded_) private returns(uint) {
         // due to project failure or grace-period exit
-        uint actuallyRefunded_ = projectVault.transferPaymentTokensToPledger( pledgerAddr_, shouldBeRefunded_); //@EtherTransfer
+        uint actuallyRefunded_ = projectVault.transferPaymentTokensToPledger( pledgerAddr_, shouldBeRefunded_); //@PTokTransfer
 
         uint32 pledgerEnterTime_ = getPledgerEnterTime( pledgerAddr_);
 
-        emit OnFinalEthRefundOfPledger( pledgerAddr_, pledgerEnterTime_, shouldBeRefunded_);
+        emit OnFinalPTokRefundOfPledger( pledgerAddr_, pledgerEnterTime_, shouldBeRefunded_);
 
         return actuallyRefunded_;
     }
@@ -772,8 +775,8 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     function getOnFailureParams() external view returns (bool,uint,uint) {
         return ( onFailureRefundParams.exists,
-                 onFailureRefundParams.totalEthInVault,
-                 onFailureRefundParams.totalAllPledgerEth);
+                 onFailureRefundParams.totalPTokInVault,
+                 onFailureRefundParams.totalAllPledgerPTok);
     }
 
 
@@ -782,21 +785,21 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
         _terminateGracePeriod();
 
-        uint totalEthInVault_ = projectVault.vaultBalance();
-        uint totalInvestedEth_ = projectVault.totalAllPledgerDeposits();
+        uint totalPTokInVault_ = projectVault.vaultBalance();
+        uint totalInvestedPTok_ = projectVault.totalAllPledgerDeposits();
 
         //zzzz create a refund factor that will be constant to all pledgers
         require( !onFailureRefundParams.exists, "onFailureRefundParams already set");
         onFailureRefundParams = OnFailureRefundParams({ exists: true,
-                                                        totalEthInVault: totalEthInVault_,
-                                                        totalAllPledgerEth: totalInvestedEth_ });
+                                                        totalPTokInVault: totalPTokInVault_,
+                                                        totalAllPledgerPTok: totalInvestedPTok_ });
 
         require( projectEndTime == 0, "end time already set");
         projectEndTime = block.timestamp;
 
         emit OnProjectFailed(address(this), block.timestamp);
 
-        //@PLEDGERS_CAN_WITHDRAW_ETH
+        //@PLEDGERS_CAN_WITHDRAW_PTOK
     }
 
 

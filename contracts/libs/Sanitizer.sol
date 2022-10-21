@@ -45,7 +45,7 @@ tokens:   https://www.youtube.com/watch?v=gc7e90MHvl8
 
    refund nft receipt from any1 (not only orig ownner); avoid reuse (burn??)
 
-   refund eth for leaving pledgr -- grace/failure
+   refund PTok for leaving pledgr -- grace/failure
 
    allow prj erc20 frorpldgr on prj success
 

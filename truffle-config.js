@@ -57,15 +57,8 @@ module.exports = {
       network_id: 5,
       gas: 6721975,
       gasPrice: 10000000000,
-    },
-    rinkeby: {
-      networkCheckTimeout: 10000,
-      provider: function() {
-            return new HDWalletProvider( mnemonic, "https://rinkeby.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff");
-      },
-      network_id: 4,
-      gas: 6721975,
-      gasPrice: 10000000000,
+      pollingInterval: 1800000,
+      disableConfirmationListener: true
     },
     // Another network with more advanced options...
     // advanced: {

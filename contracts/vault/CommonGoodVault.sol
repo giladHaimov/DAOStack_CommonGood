@@ -13,11 +13,11 @@ import "../utils/InitializedOnce.sol";
 
 contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
-    event EtherPlacedInVault( uint sum);
+    event PTokPlacedInVault( uint sum);
 
-    event EtherTransferredToTeamWallet( uint sumToTransfer_, address indexed teamWallet_, uint platformCut_, address indexed platformAddr_);
+    event PTokTransferredToTeamWallet( uint sumToTransfer_, address indexed teamWallet_, uint platformCut_, address indexed platformAddr_);
 
-    event EtherTransferredToPledger( uint sumToTransfer_, address indexed pledgerAddr_);
+    event PTokTransferredToPledger( uint sumToTransfer_, address indexed pledgerAddr_);
 
     error VaultOwnershipCannotBeTransferred( address _owner, address newOwner);
 
@@ -42,7 +42,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
     function increaseBalance( uint numPaymentTokens_) external override onlyOwner {
         numTokensInVault += numPaymentTokens_;
-        emit EtherPlacedInVault( numPaymentTokens_);
+        emit PTokPlacedInVault( numPaymentTokens_);
     }
 
     function transferPaymentTokensToPledger( address pledgerAddr_, uint numPaymentTokens_)
@@ -52,7 +52,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
         uint actuallyRefunded_ = _transferFromVaultTo( pledgerAddr_, numPaymentTokens_);
 
-        emit EtherTransferredToPledger( numPaymentTokens_, pledgerAddr_);
+        emit PTokTransferredToPledger( numPaymentTokens_, pledgerAddr_);
 
         return actuallyRefunded_;
     }
@@ -82,7 +82,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
         _transferFromVaultTo( platformAddr_, platformCut_);
 
-        emit EtherTransferredToTeamWallet( teamCut_, teamWallet_, platformCut_, platformAddr_);
+        emit PTokTransferredToTeamWallet( teamCut_, teamWallet_, platformCut_, platformAddr_);
     }
 
 
@@ -90,7 +90,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
         uint actuallyTransferred_ = numTokensToTransfer;
 
         if (actuallyTransferred_ > numTokensInVault) {
-            actuallyTransferred_ = numTokensInVault; //TODO hhh return something..
+            actuallyTransferred_ = numTokensInVault;
         }
 
         numTokensInVault -= actuallyTransferred_;

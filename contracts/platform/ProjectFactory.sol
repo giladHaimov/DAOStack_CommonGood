@@ -106,6 +106,9 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
         return paymentTokenAddr_ != address(0) && isApprovedPaymentToken[ paymentTokenAddr_];
     }
 
+
+
+
 /*
  * @title createProject()
  *
@@ -285,7 +288,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
         emit PledgerGraceExitWaitTimeChanged( pledgerGraceExitWaitTime, oldWaitTime_);
     }
 
-     function numProjects() external view returns(uint) { //hhh use
+     function numProjects() external view returns(uint) {
          return projectAddresses.length;
      }
 
