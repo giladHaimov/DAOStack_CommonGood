@@ -85,12 +85,12 @@ contract("Project", (accounts_) => {
    });
 
 
-//  it("Create a project", async () => {
-//       // to run: truffle test  --network goerli
-//
-//       // created in beforeEach()
-//      await verifyProjectMayNotBeReinitialized( milestones_);
-//  });
+  it("Create a project", async () => { //
+       // to run: truffle test  --network goerli
+
+       // created in beforeEach()
+      await verifyProjectMayNotBeReinitialized( milestones_);
+  });
 
 
   it("executes a successful project", async () => {
@@ -171,7 +171,6 @@ contract("Project", (accounts_) => {
 
       console.log("multi pldege eventstest completed");
   });
-
 
    //------------
 
@@ -288,7 +287,6 @@ contract("Project", (accounts_) => {
 
           await verifyProjectMayNotBeReinitialized( milestones_);
 
-
           let projectVaultAddr_ = await thisProjInstance.getVaultAddress();
           thisVaultInstance = await Vault.at( projectVaultAddr_);
 
@@ -297,16 +295,11 @@ contract("Project", (accounts_) => {
           await verifyActiveProject();
 
           await setPaymentTokenAllowanceForProject( addr1, ALLOWANCE_TO_PROJECT);
-
           await setPaymentTokenAllowanceForProject( addr2, ALLOWANCE_TO_PROJECT);
-
           await setPaymentTokenAllowanceForProject( addr3, ALLOWANCE_TO_PROJECT);
-
           await setPaymentTokenAllowanceForProject( addr4, ALLOWANCE_TO_PROJECT);
 
-
           lastTeamWalletBalance = await getPaymentTokenBalance( thisTeamWallet);
-
    }
 
 

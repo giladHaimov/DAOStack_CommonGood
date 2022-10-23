@@ -1,0 +1,1426 @@
+{
+	"compiler": {
+		"version": "0.8.16+commit.07a7930e"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "projectTemplate_",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "vaultTemplate_",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "platformToken_",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "externalApprover",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "fundingTarget",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "numPledgers",
+						"type": "uint256"
+					}
+				],
+				"name": "AmbiguousMilestoneApprover",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "projectVault_",
+						"type": "address"
+					}
+				],
+				"name": "BadTeamDefinedVault",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "projectToken",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "actualOwner_",
+						"type": "address"
+					}
+				],
+				"name": "ExternallyProvidedProjectTokenMustBeOwnedByPlatform",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "vault_",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "vaultOwner_",
+						"type": "address"
+					}
+				],
+				"name": "ExternallyProvidedProjectVaultMustBeOwnedByPlatform",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint32",
+						"name": "dueDate",
+						"type": "uint32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "IllegalMilestoneDueDate",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "sumToExtract_",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "contractBalance",
+						"type": "uint256"
+					}
+				],
+				"name": "InsufficientFundsInContract",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "projectAddress",
+						"type": "address"
+					}
+				],
+				"name": "InvalidProjectAddress",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "vault",
+						"type": "address"
+					}
+				],
+				"name": "InvalidVault",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					},
+					{
+						"internalType": "enum MilestoneResult",
+						"name": "milestoneResult",
+						"type": "uint8"
+					}
+				],
+				"name": "MilestoneInitialResultMustBeUnresolved",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "NoMilestoneApproverWasSet",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "projectVault_",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "teamAddr",
+						"type": "address"
+					}
+				],
+				"name": "NotAnApprovedVault",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "projectToken_",
+						"type": "address"
+					}
+				],
+				"name": "ProjectTokenMustBeIMintableERC20",
+				"type": "error"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "paymentToken",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "bool",
+						"name": "isLegal",
+						"type": "bool"
+					}
+				],
+				"name": "ApprovedPaymentTokenChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "bool",
+						"name": "inBetaMode",
+						"type": "bool"
+					},
+					{
+						"indexed": true,
+						"internalType": "bool",
+						"name": "oldBetaMode",
+						"type": "bool"
+					}
+				],
+				"name": "BetaModeChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "new_minNumMilestones",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "old_minNumMilestones",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "new_maxNumMilestones",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "old_maxNumMilestones",
+						"type": "uint256"
+					}
+				],
+				"name": "MliestoneLimitsChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newGracePeriod",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "oldGracePeriod",
+						"type": "uint256"
+					}
+				],
+				"name": "OnChangeExitGracePeriodChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "previousOwner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "OwnershipTransferred",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "Paused",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "oldValPromils",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "platformCutPromils",
+						"type": "uint256"
+					}
+				],
+				"name": "PlatformCutChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "senderProject",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "value",
+						"type": "uint256"
+					}
+				],
+				"name": "PlatformCutReceived",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "toExtract",
+						"type": "uint256"
+					}
+				],
+				"name": "PlatformFundTransferToOwner",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "platformToken",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "oldToken",
+						"type": "address"
+					}
+				],
+				"name": "PlatformTokenChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newValue",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "oldValue",
+						"type": "uint256"
+					}
+				],
+				"name": "PledgerGraceExitWaitTimeChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "projectIndex",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "projectAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "projectVault",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "numMilestones",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "projectToken",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "tokenName",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "tokenSymbol",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "tokenSupply",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "onChangeExitGracePeriod",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "pledgerGraceExitWaitTime",
+						"type": "uint256"
+					}
+				],
+				"name": "ProjectWasDeployed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "testerAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "bool",
+						"name": "isBetaTester",
+						"type": "bool"
+					}
+				],
+				"name": "SetBetaTester",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "teamWallet_",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "bool",
+						"name": "approved_",
+						"type": "bool"
+					}
+				],
+				"name": "TeamAddressApprovedStatusSet",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "Unpaused",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "vaultAddress_",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "bool",
+						"name": "approved_",
+						"type": "bool"
+					}
+				],
+				"name": "VaultAddressApprovedStatusSet",
+				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_PLATFORM_CUT_PROMILS",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "addressToProject",
+				"outputs": [
+					{
+						"internalType": "contract IProject",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "paymentTokenAddr_",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "isApproved_",
+						"type": "bool"
+					}
+				],
+				"name": "approvePaymentToken",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "approvedVaults",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "projectVault",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "projectToken",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "paymentToken",
+								"type": "address"
+							},
+							{
+								"internalType": "string",
+								"name": "tokenName",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "tokenSymbol",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minPledgedSum",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "initialTokenSupply",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct ProjectParams",
+						"name": "params_",
+						"type": "tuple"
+					},
+					{
+						"components": [
+							{
+								"components": [
+									{
+										"internalType": "address",
+										"name": "externalApprover",
+										"type": "address"
+									},
+									{
+										"internalType": "uint32",
+										"name": "targetNumPledgers",
+										"type": "uint32"
+									},
+									{
+										"internalType": "uint256",
+										"name": "fundingTarget",
+										"type": "uint256"
+									}
+								],
+								"internalType": "struct MilestoneApprover",
+								"name": "milestoneApprover",
+								"type": "tuple"
+							},
+							{
+								"internalType": "enum MilestoneResult",
+								"name": "result",
+								"type": "uint8"
+							},
+							{
+								"internalType": "uint32",
+								"name": "dueDate",
+								"type": "uint32"
+							},
+							{
+								"internalType": "int32",
+								"name": "prereqInd",
+								"type": "int32"
+							},
+							{
+								"internalType": "uint256",
+								"name": "pTokValue",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Milestone[]",
+						"name": "milestones_",
+						"type": "tuple[]"
+					}
+				],
+				"name": "createProject",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getBlockTimestamp",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "inBetaMode",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "isApprovedPaymentToken",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "isBetaTester",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "vaultAddress_",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "isApproved_",
+						"type": "bool"
+					}
+				],
+				"name": "markVaultAsApproved",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "maxNumMilestones",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "minNumMilestones",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "numPaymentTokensByTokenAddress",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "numProjects",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "onChangeExitGracePeriod",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenAddress_",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "numTokens_",
+						"type": "uint256"
+					}
+				],
+				"name": "onReceivePaymentTokens",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "owner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "paused",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "platformCutPromils",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "platformToken",
+				"outputs": [
+					{
+						"internalType": "contract IERC20",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "pledgerGraceExitWaitTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "projectAddresses",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "projectTemplate",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "renounceOwnership",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bool",
+						"name": "inBetaMode_",
+						"type": "bool"
+					}
+				],
+				"name": "setBetaMode",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "testerAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "isBetaTester_",
+						"type": "bool"
+					}
+				],
+				"name": "setBetaTester",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "new_minNumMilestones",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "new_maxNumMilestones",
+						"type": "uint256"
+					}
+				],
+				"name": "setMilestoneMinMaxCounts",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "newPlatformCutPromils",
+						"type": "uint256"
+					}
+				],
+				"name": "setPlatformCut",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "contract IERC20",
+						"name": "newPlatformToken",
+						"type": "address"
+					}
+				],
+				"name": "setPlatformToken",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "newWaitTime",
+						"type": "uint256"
+					}
+				],
+				"name": "setPledgerWaitTimeBeforeGraceExit",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "newGracePeriod",
+						"type": "uint256"
+					}
+				],
+				"name": "setProjectChangeGracePeriod",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "sumToExtract_",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenAddress_",
+						"type": "address"
+					}
+				],
+				"name": "transferFundsToPlatformOwner",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "transferOwnership",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "vaultTemplate",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {
+				"owner()": {
+					"details": "Returns the address of the current owner."
+				},
+				"paused()": {
+					"details": "Returns true if the contract is paused, and false otherwise."
+				},
+				"renounceOwnership()": {
+					"details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
+				},
+				"transferOwnership(address)": {
+					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+				}
+			},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/platform/Platform.sol": "Platform"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/@openzeppelin/contracts/access/Ownable.sol": {
+			"keccak256": "0xa94b34880e3c1b0b931662cb1c09e5dfa6662f31cba80e07c5ee71cd135c9673",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://40fb1b5102468f783961d0af743f91b9980cf66b50d1d12009f6bb1869cea4d2",
+				"dweb:/ipfs/QmYqEbJML4jB1GHbzD4cUZDtJg5wVwNm3vDJq1GbyDus8y"
+			]
+		},
+		"contracts/@openzeppelin/contracts/proxy/Clones.sol": {
+			"keccak256": "0xae614c6b103b743c62e9544632f7ef4fc8950de4e9c783d2e765a3b86701dda3",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://1840012075b9b05caa02da1b16d2d2662b2c383feb3169c8159fd8deb4840f5c",
+				"dweb:/ipfs/QmPj63a7JH3aAqVj1wvkuGEdth7s9f33vK26A5aE9k23S4"
+			]
+		},
+		"contracts/@openzeppelin/contracts/security/Pausable.sol": {
+			"keccak256": "0x0849d93b16c9940beb286a7864ed02724b248b93e0d80ef6355af5ef15c64773",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4ddabb16009cd17eaca3143feadf450ac13e72919ebe2ca50e00f61cb78bc004",
+				"dweb:/ipfs/QmSPwPxX7d6TTWakN5jy5wsaGkS1y9TW8fuhGSraMkLk2B"
+			]
+		},
+		"contracts/@openzeppelin/contracts/security/ReentrancyGuard.sol": {
+			"keccak256": "0x0e9621f60b2faabe65549f7ed0f24e8853a45c1b7990d47e8160e523683f3935",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://287a2f8d5814dd0f05f22b740f18ca8321acc21c9bd03a6cb2203ea626e2f3f2",
+				"dweb:/ipfs/QmZRQv9iuwU817VuqkA2WweiaibKii69x9QxYBBEfbNEud"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
+			"keccak256": "0x24b04b8aacaaf1a4a0719117b29c9c3647b1f479c5ac2a60f5ff1bb6d839c238",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://43e46da9d9f49741ecd876a269e71bc7494058d7a8e9478429998adb5bc3eaa0",
+				"dweb:/ipfs/QmUtp4cqzf22C5rJ76AabKADquGWcjsc33yjYXxXC4sDvy"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0x9750c6b834f7b43000631af5cc30001c5f547b3ceb3635488f140f60e897ea6b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a7d5b1ef5d8d5889ad2ed89d8619c09383b80b72ab226e0fe7bde1636481e34",
+				"dweb:/ipfs/QmebXWgtEfumQGBdVeM6c71McLixYXQP5Bk6kKXuoY4Bmr"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol": {
+			"keccak256": "0x0d19410453cda55960a818e02bd7c18952a5c8fe7a3036e81f0d599f34487a7b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4c0f62d3d5bef22b5ca00cc3903e7de6152cb68d2d22401a463f373cda54c00f",
+				"dweb:/ipfs/QmSfzjZux7LC7NW2f7rjCXTHeFMUCWERqDkhpCTBy7kxTe"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+			"keccak256": "0x8de418a5503946cabe331f35fe242d3201a73f67f77aaeb7110acb1f30423aca",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a376d3dda2cb70536c0a45c208b29b34ac560c4cb4f513a42079f96ba47d2dd",
+				"dweb:/ipfs/QmZQg6gn1sUpM8wHzwNvSnihumUCAhxD119MpXeKp8B9s8"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/Context.sol": {
+			"keccak256": "0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://6df0ddf21ce9f58271bdfaa85cde98b200ef242a05a3f85c2bc10a8294800a92",
+				"dweb:/ipfs/QmRK2Y5Yc6BK7tGKkgsgn3aJEQGi5aakeSPZvS65PV8Xp3"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
+			"keccak256": "0xd10975de010d89fd1c78dc5e8a9a7e7f496198085c151648f20cba166b32582b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://fb0048dee081f6fffa5f74afc3fb328483c2a30504e94a0ddd2a5114d731ec4d",
+				"dweb:/ipfs/QmZptt1nmYoA5SgjwnSgWqgUSDgm4q52Yos3xhnMv3MV43"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol": {
+			"keccak256": "0xc65c83c1039508fa7a42a09a3c6a32babd1c438ba4dbb23581255e784b5d5eed",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://a1b3b38db0f76429db899909025e534c366415e9ea8b5ddc4c8901e6a7fc1461",
+				"dweb:/ipfs/QmYv1KxyHjLEky9JWNSsSfpGJbiCxFyzVFgTwQKpiqYGUg"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/ERC165Storage.sol": {
+			"keccak256": "0x77bf0086774bab931413c3388d3a0f7d44cf6878965b72147f57bb0fbbf394bd",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://22318b1de700090cdc18992c2284437b25c4862f16f7b9b37a317fdb16aa44df",
+				"dweb:/ipfs/QmQrgXR7hRSyjZSgjV3nUFGx3Rqq3ESXPsaXh2mdR8vmUc"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
+			"keccak256": "0x447a5f3ddc18419d41ff92b3773fb86471b1db25773e07f877f548918a185bf1",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://be161e54f24e5c6fae81a12db1a8ae87bc5ae1b0ddc805d82a1440a68455088f",
+				"dweb:/ipfs/QmP7C3CHdY9urF4dEMb9wmsp1wMxHF6nhA2yQE5SKiPAdy"
+			]
+		},
+		"contracts/libs/Sanitizer.sol": {
+			"keccak256": "0x07cb128649b6b2d4eb57ac13138d8f3014baf9bf22d9b4c24ed0c945457c167b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://ea5874f117bb36dc0e33dc94dc9780cecc2f6d43f70bd2c26d96c27006acd448",
+				"dweb:/ipfs/QmdsiHaFzow4bRr1phsPXjEqiSdAPHaNC5vFc6PJrw7X4i"
+			]
+		},
+		"contracts/milestone/Milestone.sol": {
+			"keccak256": "0x4797fe0dd49879cab95d66f1c3006ff364de863abe54099a7e4005a4f4df41f7",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://3efc6242e551faff5fec039f131bfb575b01392b8ecbdc70c61fdd1573edfabe",
+				"dweb:/ipfs/QmWJ6M2MR8SLxysH4nMofLdRa3oLgpXEE9V9xoHjVYLzMs"
+			]
+		},
+		"contracts/milestone/MilestoneApprover.sol": {
+			"keccak256": "0x89d53b4daacd621317eb7c3146145bb44c7151b3406c5459055634fceda087b6",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://84169c082558609f6a320121d90a98bd0811be3cf206495a72bb98427e78cba6",
+				"dweb:/ipfs/QmQKgrV7VzAVr7xfbT2DpefuMJDJdZEp9yFgZjae8S5qUE"
+			]
+		},
+		"contracts/milestone/MilestoneResult.sol": {
+			"keccak256": "0x9f2cea9493f7a5b260037a2fd198d20aed59aa52b8b962ba3b11dc228bc7ed5b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://1b777c8db28ef497739361671aaa16ec9246e6162d0abdf09f9e701f4b2f1e5d",
+				"dweb:/ipfs/QmVvSaFDq4cAsudtA3RyTMez8Vpb1Du72HymNeqxErSjj3"
+			]
+		},
+		"contracts/platform/BetaTestable.sol": {
+			"keccak256": "0x36314f51446b46c86e975e6c4d531c28b46fe82970f031bea9473295854554ff",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://a6d4f21a74c691db4ed78f1420f2d1559e70f7c7ba106301c36ec219451b354a",
+				"dweb:/ipfs/QmUtwsA56kzKGE4zXMuSC9TBjxLH1d55HQjZq12RMTSbMP"
+			]
+		},
+		"contracts/platform/IPlatform.sol": {
+			"keccak256": "0x7c1ad40993b5a375f81a1a36f084a019c41ced0f9393abb44776a970f7f96f3f",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://aeaeddad716805e51c4a6016460bc3cc9e550ff5df430294d345dc498d1073d7",
+				"dweb:/ipfs/QmS9wpAughphhvVSRXtj24aBQffrgSV6ssRJtUziHFi7so"
+			]
+		},
+		"contracts/platform/Platform.sol": {
+			"keccak256": "0xbcc236fe8dfaf2deb79fa841dd21a76f238d841c3ace3d706b4eeafec8a2b172",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://8c0b7016ccf1aac794e060b4c4219942325a34181ca2ca134a7362258cdcddbe",
+				"dweb:/ipfs/QmZSg2T57uiDDEdMG1TApvuz6zXJ2A9uSbQhEi2j5Wqnhf"
+			]
+		},
+		"contracts/platform/ProjectFactory.sol": {
+			"keccak256": "0x260e251da3e28452cbaf841426693a7ddbbbcb9a2c5191ab7c7080ecb723f7d7",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://697d5dd980fabc1cd1b0ae82a476979e49435dda1f92613dd3518e76d59bbd43",
+				"dweb:/ipfs/QmVhm6KMhrzfxDWhwtxDFzV14gwYe1oQRVA37XtvqrTtrf"
+			]
+		},
+		"contracts/project/IProject.sol": {
+			"keccak256": "0x2dff0157ccacf5b833cf32ffa705f08a6bba6b863f6cf95e0e29b3fe1f4c9537",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://c478e8b7696327d14fb3de5287921f249e203df354df73dfbd4c2a6c37544794",
+				"dweb:/ipfs/QmQuAhRrzyCsCYd7tpXkjsT2gM4S43hrrEHsjTRNynmYVV"
+			]
+		},
+		"contracts/project/PledgeEvent.sol": {
+			"keccak256": "0xe358a207f46e84d74de3f8a06ea1a6bf7faf2bd4662fa3d34829b9bc4a7cd317",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://04c5f5b3822ef87ca27692e64bb583300388198278d541f06182be713eea19de",
+				"dweb:/ipfs/QmY8BJMkBHzAFhfuunLMHhwxT1qCGhTy9nUGqS3DphgXx8"
+			]
+		},
+		"contracts/project/ProjectInitParams.sol": {
+			"keccak256": "0xceb11db716ce143ec51025f7962e1efd7b0bfc63fc553385e2147400b2b28122",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://63608dcddeacf501dd138b6646fa907c638145bcb80d17d1ffedf72c135c76ba",
+				"dweb:/ipfs/QmUDqSvSe4uc5rKc7GHoJAFm8x6y3Td2PgD2WSYqWU6XK7"
+			]
+		},
+		"contracts/project/ProjectParams.sol": {
+			"keccak256": "0xcfafb4f1c0819d67d29b3e0ea0b0fc0cbfc63fd00b84c95921bf97faf310f222",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://6b9e7ce2164bd586ba0cb003202af02aeb7433bc7c9e3d8621b414058ead1b76",
+				"dweb:/ipfs/QmTfx6tmsLiRqHDSDcinDS2T32uhS88rgK3GFftGQS2o1X"
+			]
+		},
+		"contracts/project/ProjectState.sol": {
+			"keccak256": "0xa65d0c48f60f740dda27321cc0e1155ae7b6c8aabc751513aee5a943c2ebaadb",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://751a1413c06a02c38dd4fe407c02d0907ea014f86ee279c7732c401b9e0a8fe8",
+				"dweb:/ipfs/QmWELUd5P1kG25S3Mimoc6gTovzDmAHYhdUZ5MTyyJwvjs"
+			]
+		},
+		"contracts/token/CommonGoodProjectToken.sol": {
+			"keccak256": "0x51a0366ba41a6189204446b6b905e3792f762c4e86e95308b6a5f1f6befe8066",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://f479f4af0927af0427c759c3ad5cfbf459c5bf4ff956f72c7ce21ecd2ab6919c",
+				"dweb:/ipfs/QmNn9eUqeJrz56xT1KB8jNLeuDHQSLjZGJa7zvWJRndrKp"
+			]
+		},
+		"contracts/token/IMintableOwnedERC20.sol": {
+			"keccak256": "0x8bedfafca05cc56040b6a09392e2fc64672c632021c83755dddc9d48f079e1af",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://d768018556ed7f0ccc266d2b738356e910c62c4018bcdc92c56afc1591d24975",
+				"dweb:/ipfs/QmRGyR5AHT36aTQpXsSs8wfpMDakyfYwUJ8pz9uTT195U3"
+			]
+		},
+		"contracts/vault/IVault.sol": {
+			"keccak256": "0x7d089b1f93b0d6d5f1f01d9f5484fad43ebdc026da7c311818fa1307453a64c0",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://232466e6a84067af47c1c2447199e169c44597c4cdad03280a71d3a470f2aaa9",
+				"dweb:/ipfs/QmP6Fkupzcww5yhbLywGtQDzbg6DhH8W2nvgbQjNmUtc7d"
+			]
+		}
+	},
+	"version": 1
+}

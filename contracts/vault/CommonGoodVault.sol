@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
+import "../@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../vault/IVault.sol";
 import "../platform/IPlatform.sol";
@@ -41,6 +41,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
     }
 
     function increaseBalance( uint numPaymentTokens_) external override onlyOwner {
+        verifyInitialized();
         numTokensInVault += numPaymentTokens_;
         emit PTokPlacedInVault( numPaymentTokens_);
     }
@@ -49,6 +50,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
                                                     external override onlyOwner returns(uint) {
         // can only be invoked by connected project
         // @PROTECT: DoS, Re-entry
+        verifyInitialized();
 
         uint actuallyRefunded_ = _transferFromVaultTo( pledgerAddr_, numPaymentTokens_);
 
@@ -66,6 +68,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
     function transferPaymentTokenToTeamWallet (uint totalSumToTransfer_, uint platformCut_, address platformAddr_)
                                                 external override onlyOwner { //@PUBFUNC
+        verifyInitialized();
 
         // can only be invoked by connected project
         // @PROTECT: DoS, Re-entry
@@ -131,6 +134,8 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
 
     function decreaseTotalDepositsOnPledgerGraceExit(PledgeEvent[] calldata pledgerEvents) external override onlyOwner {
+        verifyInitialized();
+
         uint totalForPledger_ = 0 ;
         for (uint i = 0; i < pledgerEvents.length; i++) {
             totalForPledger_ += pledgerEvents[i].sum;

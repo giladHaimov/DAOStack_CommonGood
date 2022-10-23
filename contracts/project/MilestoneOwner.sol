@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "../@openzeppelin/contracts/security/Pausable.sol";
+import "../@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "../@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "../@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "../milestone/MilestoneResult.sol";
 import "../milestone/Milestone.sol";

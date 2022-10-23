@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "../@openzeppelin/contracts/security/Pausable.sol";
+import "../@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "../@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "../@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "../@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "./PledgeEvent.sol";
 import "./MilestoneOwner.sol";
@@ -367,6 +367,8 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
                                         onlyIfSenderHasSufficientTokenBalance( numPaymentTokens_)
                                         onlyIfSufficientTokenAllowance( numPaymentTokens_)
                                         onlyIfProjectNotCompleted nonReentrant { //@PUBFUNC //@PTokTransfer //@PLEDGER
+        verifyInitialized();
+
         address newPledgerAddr_ = msg.sender;
 
         require( paymentTokenAddr_ == paymentTokenAddress, "bad payment token");
@@ -435,6 +437,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
  * @event: MilestoneIsOverdueEvent
  */ //@DOC4
     function onMilestoneOverdue(uint milestoneIndex_) external openForAll onlyIfProjectNotCompleted  {//@PUBFUNC: also notPaused??
+        verifyInitialized();
 
         uint initial_numCompleted = successfulMilestoneIndexes.length;
 

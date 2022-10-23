@@ -51,12 +51,13 @@ module.exports = {
     },
     goerli: {
       networkCheckTimeout: 10000,
+      timeoutBlocks: 200,
       provider: function() {
         return new HDWalletProvider( mnemonic, "https://goerli.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff");
       },
       network_id: 5,
       gas: 6721975,
-      gasPrice: 10000000000,
+      gasPrice: 20000000000,
       pollingInterval: 1800000,
       disableConfirmationListener: true
     },
@@ -100,7 +101,7 @@ module.exports = {
       settings: {          // See the solidity docs for advice about optimization and evmVersion
        optimizer: {
          enabled: true,
-         runs: 200
+         runs: 1 //200
        },
       //  evmVersion: "byzantium"
       }
@@ -128,8 +129,14 @@ module.exports = {
     // }
   // }
 
+  api_keys: {
+       etherscan: 'api_key_here'
+  },
+
   plugins: [
+          'truffle-plugin-verify',
           'truffle-contract-size'
 //          'solidity-coverage'
         ]
+
 };

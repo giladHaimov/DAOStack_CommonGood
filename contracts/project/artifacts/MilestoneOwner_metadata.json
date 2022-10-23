@@ -1,0 +1,637 @@
+{
+	"compiler": {
+		"version": "0.8.16+commit.07a7930e"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "externalApprover",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "msgSender",
+						"type": "address"
+					}
+				],
+				"name": "CanOnlyBeInvokedByAMilestoneApprover",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "MilestoneIsAlreadyResolved",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "NotAnExpernallyApprovedMilestone",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "int256",
+						"name": "prerequisiteIndex",
+						"type": "int256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "PrerequisitesWasNotMet",
+				"type": "error"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
+					}
+				],
+				"name": "MilestoneFailedByExternalApprover",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "dueDate",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "blockTimestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "MilestoneIsOverdueEvent",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "enum MilestoneResult",
+						"name": "newResult",
+						"type": "uint8"
+					},
+					{
+						"indexed": false,
+						"internalType": "enum MilestoneResult",
+						"name": "oldResult",
+						"type": "uint8"
+					}
+				],
+				"name": "MilestoneResultChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
+					}
+				],
+				"name": "MilestoneSucceededByExternalApprover",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "fundingTarget",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "currentBalance",
+						"type": "uint256"
+					}
+				],
+				"name": "MilestoneSucceededFunding",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "numPledgersInMilestone",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "numPledgersSofar",
+						"type": "uint256"
+					}
+				],
+				"name": "MilestoneSucceededNumPledgers",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					}
+				],
+				"name": "MilestoneSuccess",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					}
+				],
+				"name": "OnchainMilestoneNotYetReached",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "backdoor_markMilestoneAsOverdue",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					}
+				],
+				"name": "checkIfOnchainTargetWasReached",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "getMilestoneOverdueTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "getMilestoneResult",
+				"outputs": [
+					{
+						"internalType": "enum MilestoneResult",
+						"name": "",
+						"type": "uint8"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "getMilestoneValueInPaymentTokens",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getNumberOfMilestones",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getNumberOfSuccessfulMilestones",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "getPrerequisiteIndexForMilestone",
+				"outputs": [
+					{
+						"internalType": "int256",
+						"name": "",
+						"type": "int256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "milestoneArr",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "externalApprover",
+								"type": "address"
+							},
+							{
+								"internalType": "uint32",
+								"name": "targetNumPledgers",
+								"type": "uint32"
+							},
+							{
+								"internalType": "uint256",
+								"name": "fundingTarget",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct MilestoneApprover",
+						"name": "milestoneApprover",
+						"type": "tuple"
+					},
+					{
+						"internalType": "enum MilestoneResult",
+						"name": "result",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint32",
+						"name": "dueDate",
+						"type": "uint32"
+					},
+					{
+						"internalType": "int32",
+						"name": "prereqInd",
+						"type": "int32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "pTokValue",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					}
+				],
+				"name": "milestoneIsOverdue",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "milestoneIndex_",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "succeeded",
+						"type": "bool"
+					},
+					{
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
+					}
+				],
+				"name": "onExternalApproverResolve",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "paymentTokenAddress",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "successfulMilestoneIndexes",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/project/MilestoneOwner.sol": "MilestoneOwner"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/@openzeppelin/contracts/access/Ownable.sol": {
+			"keccak256": "0xa94b34880e3c1b0b931662cb1c09e5dfa6662f31cba80e07c5ee71cd135c9673",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://40fb1b5102468f783961d0af743f91b9980cf66b50d1d12009f6bb1869cea4d2",
+				"dweb:/ipfs/QmYqEbJML4jB1GHbzD4cUZDtJg5wVwNm3vDJq1GbyDus8y"
+			]
+		},
+		"contracts/@openzeppelin/contracts/security/Pausable.sol": {
+			"keccak256": "0x0849d93b16c9940beb286a7864ed02724b248b93e0d80ef6355af5ef15c64773",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4ddabb16009cd17eaca3143feadf450ac13e72919ebe2ca50e00f61cb78bc004",
+				"dweb:/ipfs/QmSPwPxX7d6TTWakN5jy5wsaGkS1y9TW8fuhGSraMkLk2B"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
+			"keccak256": "0x24b04b8aacaaf1a4a0719117b29c9c3647b1f479c5ac2a60f5ff1bb6d839c238",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://43e46da9d9f49741ecd876a269e71bc7494058d7a8e9478429998adb5bc3eaa0",
+				"dweb:/ipfs/QmUtp4cqzf22C5rJ76AabKADquGWcjsc33yjYXxXC4sDvy"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0x9750c6b834f7b43000631af5cc30001c5f547b3ceb3635488f140f60e897ea6b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a7d5b1ef5d8d5889ad2ed89d8619c09383b80b72ab226e0fe7bde1636481e34",
+				"dweb:/ipfs/QmebXWgtEfumQGBdVeM6c71McLixYXQP5Bk6kKXuoY4Bmr"
+			]
+		},
+		"contracts/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+			"keccak256": "0x8de418a5503946cabe331f35fe242d3201a73f67f77aaeb7110acb1f30423aca",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a376d3dda2cb70536c0a45c208b29b34ac560c4cb4f513a42079f96ba47d2dd",
+				"dweb:/ipfs/QmZQg6gn1sUpM8wHzwNvSnihumUCAhxD119MpXeKp8B9s8"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/Context.sol": {
+			"keccak256": "0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://6df0ddf21ce9f58271bdfaa85cde98b200ef242a05a3f85c2bc10a8294800a92",
+				"dweb:/ipfs/QmRK2Y5Yc6BK7tGKkgsgn3aJEQGi5aakeSPZvS65PV8Xp3"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
+			"keccak256": "0xd10975de010d89fd1c78dc5e8a9a7e7f496198085c151648f20cba166b32582b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://fb0048dee081f6fffa5f74afc3fb328483c2a30504e94a0ddd2a5114d731ec4d",
+				"dweb:/ipfs/QmZptt1nmYoA5SgjwnSgWqgUSDgm4q52Yos3xhnMv3MV43"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol": {
+			"keccak256": "0xc65c83c1039508fa7a42a09a3c6a32babd1c438ba4dbb23581255e784b5d5eed",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://a1b3b38db0f76429db899909025e534c366415e9ea8b5ddc4c8901e6a7fc1461",
+				"dweb:/ipfs/QmYv1KxyHjLEky9JWNSsSfpGJbiCxFyzVFgTwQKpiqYGUg"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
+			"keccak256": "0x447a5f3ddc18419d41ff92b3773fb86471b1db25773e07f877f548918a185bf1",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://be161e54f24e5c6fae81a12db1a8ae87bc5ae1b0ddc805d82a1440a68455088f",
+				"dweb:/ipfs/QmP7C3CHdY9urF4dEMb9wmsp1wMxHF6nhA2yQE5SKiPAdy"
+			]
+		},
+		"contracts/@openzeppelin/contracts/utils/math/SafeCast.sol": {
+			"keccak256": "0x02686c31ccb9ee77a299fa5f47327af5271f251a707a0e24f321957166ff0434",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://cb562d8ae1da31249ca0d8553df9f89ef4c3c110a018c4449dde68ae30e51ec1",
+				"dweb:/ipfs/QmUwxjtTUYB89ymeV46TZPmTsGnYrKNcgTHk7MQA1MG3hj"
+			]
+		},
+		"contracts/milestone/Milestone.sol": {
+			"keccak256": "0x4797fe0dd49879cab95d66f1c3006ff364de863abe54099a7e4005a4f4df41f7",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://3efc6242e551faff5fec039f131bfb575b01392b8ecbdc70c61fdd1573edfabe",
+				"dweb:/ipfs/QmWJ6M2MR8SLxysH4nMofLdRa3oLgpXEE9V9xoHjVYLzMs"
+			]
+		},
+		"contracts/milestone/MilestoneApprover.sol": {
+			"keccak256": "0x89d53b4daacd621317eb7c3146145bb44c7151b3406c5459055634fceda087b6",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://84169c082558609f6a320121d90a98bd0811be3cf206495a72bb98427e78cba6",
+				"dweb:/ipfs/QmQKgrV7VzAVr7xfbT2DpefuMJDJdZEp9yFgZjae8S5qUE"
+			]
+		},
+		"contracts/milestone/MilestoneResult.sol": {
+			"keccak256": "0x9f2cea9493f7a5b260037a2fd198d20aed59aa52b8b962ba3b11dc228bc7ed5b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://1b777c8db28ef497739361671aaa16ec9246e6162d0abdf09f9e701f4b2f1e5d",
+				"dweb:/ipfs/QmVvSaFDq4cAsudtA3RyTMez8Vpb1Du72HymNeqxErSjj3"
+			]
+		},
+		"contracts/platform/IPlatform.sol": {
+			"keccak256": "0x7c1ad40993b5a375f81a1a36f084a019c41ced0f9393abb44776a970f7f96f3f",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://aeaeddad716805e51c4a6016460bc3cc9e550ff5df430294d345dc498d1073d7",
+				"dweb:/ipfs/QmS9wpAughphhvVSRXtj24aBQffrgSV6ssRJtUziHFi7so"
+			]
+		},
+		"contracts/project/MilestoneOwner.sol": {
+			"keccak256": "0xfbe9ca92eddd21ac63eab84a2fc4b7e106531fa07d0fa46b79936a8206487093",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://269402cd930fa368f1ea30891518a9d78cd7081d326a4337e9b1dba58f4a2ae3",
+				"dweb:/ipfs/QmaAzGSWBJasZ4UYKzV6CknZLykKYEMB9qQUvmRfyDwFTA"
+			]
+		},
+		"contracts/project/PledgeEvent.sol": {
+			"keccak256": "0xe358a207f46e84d74de3f8a06ea1a6bf7faf2bd4662fa3d34829b9bc4a7cd317",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://04c5f5b3822ef87ca27692e64bb583300388198278d541f06182be713eea19de",
+				"dweb:/ipfs/QmY8BJMkBHzAFhfuunLMHhwxT1qCGhTy9nUGqS3DphgXx8"
+			]
+		},
+		"contracts/vault/IVault.sol": {
+			"keccak256": "0x7d089b1f93b0d6d5f1f01d9f5484fad43ebdc026da7c311818fa1307453a64c0",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://232466e6a84067af47c1c2447199e169c44597c4cdad03280a71d3a470f2aaa9",
+				"dweb:/ipfs/QmP6Fkupzcww5yhbLywGtQDzbg6DhH8W2nvgbQjNmUtc7d"
+			]
+		}
+	},
+	"version": 1
+}

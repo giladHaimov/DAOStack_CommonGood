@@ -48,6 +48,10 @@ abstract contract InitializedOnce {
         return owner;
     }
 
+    function verifyInitialized() internal view {
+        require( wasInitialized, "not initialized");
+    }
+
     function markAsInitialized( address owner_) internal onlyIfNotInitialized {
         wasInitialized = true;
 
