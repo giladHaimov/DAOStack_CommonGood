@@ -40,7 +40,7 @@ contract("Deployment", (accounts_) => {
 
     it("Goerli deploy", async () => {
 
-//          await verifyNetworkId( 5, "Goerli");hhhh
+          await verifyNetworkId( 5, "Goerli");
 
           await createNewContract();
     });
@@ -51,7 +51,7 @@ contract("Deployment", (accounts_) => {
           const MILESTONE_VALUE = _toWei('1');
           const MIN_PLEDGE_SUM = MILESTONE_VALUE;
 
-          //hhhh const EMPTY_CID = web3.utils.asciiToHex("00000000000000000000000000000000")
+          const CID_VALUE = '0x4554480000000000000000000000000000000000000000000000000000000000';
 
           const zeroPTok = 0;
 
@@ -61,8 +61,8 @@ contract("Deployment", (accounts_) => {
                           paymentToken: paymentTokenInstance.address,
                           minPledgedSum: MIN_PLEDGE_SUM,
                           initialTokenSupply: 100*MILLION,
-                          projectToken: ZERO_ADDR };
-//                          cid: "00000000000000000000000000000000" };
+                          projectToken: ZERO_ADDR,
+                          cid: CID_VALUE };
 
           let ts_ = await platformInst.getBlockTimestamp();
 
@@ -83,9 +83,6 @@ contract("Deployment", (accounts_) => {
   }
 
    async function invokeCreateProject( params_, milestones_, addr_) {
-//          await platformInst.hhhhh_passBytes32( "00000000000000000000000000000000", { from: addr_ });
-//          return; //hhhhh
-
           let receipt_ = await platformInst.createProject( params_, milestones_, { from: addr_ });
 
           let projectAddr_ = await extractProjectAddressFromEvent( receipt_);

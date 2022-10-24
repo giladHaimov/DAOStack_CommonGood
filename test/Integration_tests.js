@@ -16,7 +16,7 @@ contract("Project", (accounts_) => {
 
    const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
-//   const EMPTY_CID = web3.utils.asciiToHex("00000000000000000000000000000000")
+   const CID_VALUE = '0x4554480000000000000000000000000000000000000000000000000000000000';
 
    const MILLION = 1000000;
 
@@ -270,8 +270,8 @@ contract("Project", (accounts_) => {
                           paymentToken: paymentTokenInstance.address,
                           minPledgedSum: MIN_PLEDGE_SUM,
                           initialTokenSupply: 100*MILLION,
-                          projectToken: ZERO_ADDR  };
-//                          cid: EMPTY_CID };
+                          projectToken: ZERO_ADDR,
+                          cid: CID_VALUE };
 
           let ts_ = await platformInst.getBlockTimestamp();
 
@@ -627,8 +627,8 @@ contract("Project", (accounts_) => {
                        minPledgedSum: 1000000,
                        onChangeExitGracePeriod: 100000,
                        pledgerGraceExitWaitTime: 10000,
-                       paymentToken: paymentTokenInstance.address
-//                       cid: EMPTY_CID
+                       paymentToken: paymentTokenInstance.address,
+                       cid: CID_VALUE
           };
 
           if ( !revertReasonSupported) {
@@ -1112,8 +1112,8 @@ contract("Project", (accounts_) => {
                         paymentToken: paymentTokenInstance.address,
                         minPledgedSum: MIN_PLEDGE_SUM,
                         initialTokenSupply: 100*MILLION,
-                        projectToken: ZERO_ADDR  };
-//                        cid: EMPTY_CID };
+                        projectToken: ZERO_ADDR,
+                        cid: CID_VALUE };
 
         let ts_ = await platformInst.getBlockTimestamp();
 

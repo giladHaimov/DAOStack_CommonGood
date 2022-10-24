@@ -15,5 +15,5 @@ struct ProjectInitParams {
     uint onChangeExitGracePeriod;
     uint pledgerGraceExitWaitTime;
     address paymentToken;
-//    bytes32 cid; hhhh
+    bytes32 cid;
 }

@@ -107,11 +107,6 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
     }
 
 
-    bytes32 public hhhhVal;
-    function hhhhh_passBytes32( bytes32 data) external { hhhhVal = data; }
-
-
-
 /*
  * @title createProject()
  *
@@ -180,8 +175,8 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
             minPledgedSum: params_.minPledgedSum,
             onChangeExitGracePeriod: onChangeExitGracePeriod,
             pledgerGraceExitWaitTime: pledgerGraceExitWaitTime,
-            paymentToken: params_.paymentToken
-//            cid: params_.cid hhhh
+            paymentToken: params_.paymentToken,
+            cid: params_.cid
         });
 
         project_.initialize( initParams_);
