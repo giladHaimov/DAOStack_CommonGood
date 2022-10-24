@@ -17,4 +17,6 @@ struct ProjectParams {
     string tokenSymbol;
     uint minPledgedSum;
     uint initialTokenSupply;
+
+//    bytes32 cid; // ref to metadata hhhh
 }

@@ -40,7 +40,7 @@ contract("Deployment", (accounts_) => {
 
     it("Goerli deploy", async () => {
 
-          await verifyNetworkId( 5, "Goerli");
+//          await verifyNetworkId( 5, "Goerli");hhhh
 
           await createNewContract();
     });
@@ -51,6 +51,8 @@ contract("Deployment", (accounts_) => {
           const MILESTONE_VALUE = _toWei('1');
           const MIN_PLEDGE_SUM = MILESTONE_VALUE;
 
+          //hhhh const EMPTY_CID = web3.utils.asciiToHex("00000000000000000000000000000000")
+
           const zeroPTok = 0;
 
           let params_ = { tokenName: "tok332",
@@ -60,12 +62,13 @@ contract("Deployment", (accounts_) => {
                           minPledgedSum: MIN_PLEDGE_SUM,
                           initialTokenSupply: 100*MILLION,
                           projectToken: ZERO_ADDR };
+//                          cid: "00000000000000000000000000000000" };
 
           let ts_ = await platformInst.getBlockTimestamp();
 
-          let extApprover_2 = { externalApprover: addr2, targetNumPledgers: 0, fundingTarget: 0 };
-          let extApprover_3 = { externalApprover: addr3, targetNumPledgers: 0, fundingTarget: 0 };
-          let extApprover_4 = { externalApprover: addr4, targetNumPledgers: 0, fundingTarget: 0 };
+          let extApprover_2 = { externalApprover: addr2, targetNumPledgers: 0, fundingPTokTarget: 0 };
+          let extApprover_3 = { externalApprover: addr3, targetNumPledgers: 0, fundingPTokTarget: 0 };
+          let extApprover_4 = { externalApprover: addr4, targetNumPledgers: 0, fundingPTokTarget: 0 };
 
           milestones_ = [
                 { milestoneApprover: extApprover_2, prereqInd: -1, pTokValue: zeroPTok,        result: 0, dueDate: addSecs(ts_, 200000) },
@@ -80,6 +83,9 @@ contract("Deployment", (accounts_) => {
   }
 
    async function invokeCreateProject( params_, milestones_, addr_) {
+//          await platformInst.hhhhh_passBytes32( "00000000000000000000000000000000", { from: addr_ });
+//          return; //hhhhh
+
           let receipt_ = await platformInst.createProject( params_, milestones_, { from: addr_ });
 
           let projectAddr_ = await extractProjectAddressFromEvent( receipt_);

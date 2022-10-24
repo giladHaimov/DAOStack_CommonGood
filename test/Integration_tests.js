@@ -16,6 +16,8 @@ contract("Project", (accounts_) => {
 
    const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
+//   const EMPTY_CID = web3.utils.asciiToHex("00000000000000000000000000000000")
+
    const MILLION = 1000000;
 
    //  TODO: test external vault/token
@@ -268,7 +270,8 @@ contract("Project", (accounts_) => {
                           paymentToken: paymentTokenInstance.address,
                           minPledgedSum: MIN_PLEDGE_SUM,
                           initialTokenSupply: 100*MILLION,
-                          projectToken: ZERO_ADDR };
+                          projectToken: ZERO_ADDR  };
+//                          cid: EMPTY_CID };
 
           let ts_ = await platformInst.getBlockTimestamp();
 
@@ -338,9 +341,9 @@ contract("Project", (accounts_) => {
         return (new BN(baseSecs).add(new BN(addedSecs))).toString();
    }
 
-   let extApprover_2 = { externalApprover: addr2, targetNumPledgers: 0, fundingTarget: 0 };
-   let extApprover_3 = { externalApprover: addr3, targetNumPledgers: 0, fundingTarget: 0 };
-   let extApprover_4 = { externalApprover: addr4, targetNumPledgers: 0, fundingTarget: 0 };
+   let extApprover_2 = { externalApprover: addr2, targetNumPledgers: 0, fundingPTokTarget: 0 };
+   let extApprover_3 = { externalApprover: addr3, targetNumPledgers: 0, fundingPTokTarget: 0 };
+   let extApprover_4 = { externalApprover: addr4, targetNumPledgers: 0, fundingPTokTarget: 0 };
 
 
    async function printProjectParams() {
@@ -625,6 +628,7 @@ contract("Project", (accounts_) => {
                        onChangeExitGracePeriod: 100000,
                        pledgerGraceExitWaitTime: 10000,
                        paymentToken: paymentTokenInstance.address
+//                       cid: EMPTY_CID
           };
 
           if ( !revertReasonSupported) {
@@ -1108,7 +1112,8 @@ contract("Project", (accounts_) => {
                         paymentToken: paymentTokenInstance.address,
                         minPledgedSum: MIN_PLEDGE_SUM,
                         initialTokenSupply: 100*MILLION,
-                        projectToken: ZERO_ADDR };
+                        projectToken: ZERO_ADDR  };
+//                        cid: EMPTY_CID };
 
         let ts_ = await platformInst.getBlockTimestamp();
 

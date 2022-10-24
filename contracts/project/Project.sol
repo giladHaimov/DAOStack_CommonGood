@@ -51,6 +51,8 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     uint public pledgerGraceExitWaitTime;
     uint public platformCutPromils;
 
+//    bytes32 public metadataCID;hhhh
+
     uint public current_endOfGracePeriod;
 
     mapping (address => PledgeEvent[]) public pledgerAddrToEventMap;
@@ -173,7 +175,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         platformCutPromils = params_.platformCutPromils;
         onChangeExitGracePeriod = params_.onChangeExitGracePeriod;
         pledgerGraceExitWaitTime = params_.pledgerGraceExitWaitTime;
-
+//        metadataCID = params_.cid; hhhh
     }
 
     //---------
@@ -737,6 +739,10 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     function getProjectState() external view override returns(ProjectState) {
         return projectState;
     }
+
+//    function getProjectMetadataCID() external view returns(bytes32) {
+//        return metadataCID;
+//    }hhhh
 
     function _projectNotCompleted() internal override view returns(bool) {
         return projectState == ProjectState.IN_PROGRESS;
