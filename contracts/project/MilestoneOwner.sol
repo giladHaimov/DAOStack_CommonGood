@@ -41,7 +41,7 @@ abstract contract MilestoneOwner {
 
     event MilestoneSucceededNumPledgers( uint indexed numPledgersInMilestone, uint indexed numPledgersSofar);
 
-    event MilestoneSucceededFunding(uint indexed fundingTarget, uint currentBalance);
+    event MilestoneSucceededFunding(uint indexed fundingPTokTarget, uint currentBalance);
 
     event MilestoneSucceededByExternalApprover( uint milestoneIndex_, string reason);
 
@@ -183,14 +183,14 @@ abstract contract MilestoneOwner {
                                                         private onlyIfOnchain( milestoneIndex_)
                                                         returns(bool) {
         MilestoneApprover storage approver_ = milestone_.milestoneApprover;
-        require( approver_.fundingTarget > 0 || approver_.targetNumPledgers > 0, "not on-chain");
+        require( approver_.fundingPTokTarget > 0 || approver_.targetNumPledgers > 0, "not on-chain");
 
         _verifyPrerequisiteWasMet( milestoneIndex_);
 
-        if (approver_.fundingTarget > 0) {
+        if (approver_.fundingPTokTarget > 0) {
             uint vaultBalance_ = _getProjectVault().vaultBalance();
-            if (vaultBalance_ >= approver_.fundingTarget) {
-                emit MilestoneSucceededFunding( approver_.fundingTarget, vaultBalance_);
+            if (vaultBalance_ >= approver_.fundingPTokTarget) {
+                emit MilestoneSucceededFunding( approver_.fundingPTokTarget, vaultBalance_);
                 return true;
             }
             return false;
@@ -306,6 +306,14 @@ abstract contract MilestoneOwner {
 
     function getNumberOfMilestones() external view returns(uint) {
         return milestoneArr.length;
+    }
+
+    function getMilestoneDetails(uint ind_) external view returns( MilestoneResult, uint32, int32, uint, address, uint32, uint) {
+        Milestone storage mstone_ = milestoneArr[ind_];
+        MilestoneApprover storage approver_ = mstone_.milestoneApprover;
+        return (
+            mstone_.result, mstone_.dueDate, mstone_.prereqInd, mstone_.pTokValue,
+            approver_.externalApprover, approver_.targetNumPledgers, approver_.fundingPTokTarget );
     }
 
     function getPrerequisiteIndexForMilestone(uint milestoneIndex) external view returns(int) {

@@ -89,7 +89,7 @@ library Sanitizer {
 
     error NoMilestoneApproverWasSet(uint index);
 
-    error AmbiguousMilestoneApprover(uint index, address externalApprover, uint fundingTarget, uint numPledgers);
+    error AmbiguousMilestoneApprover(uint index, address externalApprover, uint fundingPTokTarget, uint numPledgers);
 
 
     function _sanitizeMilestones( Milestone[] memory milestones_, uint now_, uint minNumMilestones_, uint maxNumMilestones_) internal pure {
@@ -111,16 +111,16 @@ library Sanitizer {
     }
 
     function _validateApprover(uint index, MilestoneApprover memory approver_) private pure {
-        bool approverIsSet_ = (approver_.externalApprover != address(0) || approver_.fundingTarget > 0 || approver_.targetNumPledgers > 0);
+        bool approverIsSet_ = (approver_.externalApprover != address(0) || approver_.fundingPTokTarget > 0 || approver_.targetNumPledgers > 0);
         if ( !approverIsSet_) {
             revert NoMilestoneApproverWasSet(index);
         }
-        bool extApproverUnique = (approver_.externalApprover == address(0) || (approver_.fundingTarget == 0 && approver_.targetNumPledgers == 0));
-        bool fundingTargetUnique = (approver_.fundingTarget == 0  || (approver_.externalApprover == address(0) && approver_.targetNumPledgers == 0));
-        bool numPledgersUnique = (approver_.targetNumPledgers == 0  || (approver_.externalApprover == address(0) && approver_.fundingTarget == 0));
+        bool extApproverUnique = (approver_.externalApprover == address(0) || (approver_.fundingPTokTarget == 0 && approver_.targetNumPledgers == 0));
+        bool fundingTargetUnique = (approver_.fundingPTokTarget == 0  || (approver_.externalApprover == address(0) && approver_.targetNumPledgers == 0));
+        bool numPledgersUnique = (approver_.targetNumPledgers == 0  || (approver_.externalApprover == address(0) && approver_.fundingPTokTarget == 0));
 
         if ( !extApproverUnique || !fundingTargetUnique || !numPledgersUnique) {
-            revert AmbiguousMilestoneApprover(index, approver_.externalApprover, approver_.fundingTarget, approver_.targetNumPledgers);
+            revert AmbiguousMilestoneApprover(index, approver_.externalApprover, approver_.fundingPTokTarget, approver_.targetNumPledgers);
         }
     }
 

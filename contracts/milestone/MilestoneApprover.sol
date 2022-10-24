@@ -7,6 +7,6 @@ struct MilestoneApprover {
 
     //on-chain
     uint32 targetNumPledgers;
-    uint fundingTarget;
+    uint fundingPTokTarget;
 }
 
