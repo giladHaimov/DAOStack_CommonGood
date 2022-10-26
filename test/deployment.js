@@ -45,13 +45,15 @@ contract("Deployment", (accounts_) => {
           await createNewContract();
     });
 */
+
+/*
     it("Mainnet deploy", async () => {
 
           await verifyNetworkId( 1, "Mainnet");
 
           await createNewContract();
     });
-
+*/
 
     async function createNewContract() {
 
