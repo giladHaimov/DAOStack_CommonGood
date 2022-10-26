@@ -37,10 +37,17 @@ contract("Deployment", (accounts_) => {
    });
 
 
-
+/*
     it("Goerli deploy", async () => {
 
           await verifyNetworkId( 5, "Goerli");
+
+          await createNewContract();
+    });
+*/
+    it("Mainnet deploy", async () => {
+
+          await verifyNetworkId( 1, "Mainnet");
 
           await createNewContract();
     });

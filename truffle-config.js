@@ -61,6 +61,18 @@ module.exports = {
       pollingInterval: 1800000,
       disableConfirmationListener: true
     },
+    mainnet: {
+      networkCheckTimeout: 10000,
+      timeoutBlocks: 200,
+      provider: function() {
+        return new HDWalletProvider( mnemonic, "https://mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff");
+      },
+      network_id: 1,
+      gas: 6721975,
+      gasPrice: 20000000000,
+      pollingInterval: 1800000,
+      disableConfirmationListener: true
+    },
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port
@@ -130,7 +142,7 @@ module.exports = {
   // }
 
   api_keys: {
-       etherscan: 'api_key_here'
+       etherscan: 'hhh-api-key'
   },
 
   plugins: [
