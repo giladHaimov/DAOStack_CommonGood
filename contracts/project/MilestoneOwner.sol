@@ -234,26 +234,19 @@ abstract contract MilestoneOwner {
     function _transferMilestoneFundsToTeam( Milestone storage milestone_) private {
         uint value_ = milestone_.pTokValue;
 
-        uint platformCut_ = _calcPlatformCut(value_);
-
         // pass milestone funds from vault to teamWallet
         require( address(this) == _getProjectVault().getOwner(), "proj contract must own vault");
 
-        _transferPaymentTokenToTeam( value_, platformCut_);
+        _transferPaymentTokenToTeam( value_, _getPlatformCutPromils());
     }
 
 
-    function _transferPaymentTokenToTeam( uint value_, uint platformCut_) internal {
+    function _transferPaymentTokenToTeam( uint value_, uint platformCutPromils_) internal {
         address platformAddr_ = _getPlatformAddress();
 
-        _getProjectVault().transferPaymentTokenToTeamWallet( value_, platformCut_, _getPlatformAddress());
+        (uint teamCut_, uint platformCut_) = _getProjectVault().transferPToksToTeamWallet( value_, platformCutPromils_, _getPlatformAddress());
 
         IPlatform( platformAddr_).onReceivePaymentTokens( paymentTokenAddress, platformCut_);
-    }
-
-
-    function _calcPlatformCut(uint totalValue_) internal view returns(uint) {
-        return (totalValue_ * _getPlatformCutPromils()) / 1000;
     }
 
     function _failIfOverdue( uint milestoneIndex_, Milestone storage milestone_) internal returns(bool) {

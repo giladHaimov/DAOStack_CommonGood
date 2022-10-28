@@ -209,7 +209,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
         }
 
         address tokenOwner_ = projectToken_.getOwner();
-        if ( tokenOwner_ != address(this)) {
+        if ( tokenOwner_ != address(this) && tokenOwner_ != address(0)) {
             revert ExternallyProvidedProjectTokenMustBeOwnedByPlatform( address( projectToken_), tokenOwner_);
         }
     }
@@ -225,7 +225,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
         }
 
         address vaultOwner_ = IVault(vault_).getOwner();
-        if ( vaultOwner_ != address(this)) {
+        if ( vaultOwner_ != address(this) && vaultOwner_ != address(0)) {
             revert ExternallyProvidedProjectVaultMustBeOwnedByPlatform( address(vault_), vaultOwner_);
         }
     }

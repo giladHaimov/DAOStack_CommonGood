@@ -143,9 +143,9 @@ contract Platform is ProjectFactory, IPlatform, /*Ownable, Pausable,*/ Reentranc
      *
      * @event: PlatformCutReceived
      */
-    function onReceivePaymentTokens( address tokenAddress_, uint numTokens_) external override onlyValidProject { //@PUBFUNC //@PTokTransfer
-        numPaymentTokensByTokenAddress[ tokenAddress_] += numTokens_;
-        emit PlatformCutReceived( msg.sender, numTokens_);
+    function onReceivePaymentTokens( address tokenAddress_, uint numTokensToPlatform_) external override onlyValidProject { //@PUBFUNC //@PTokTransfer
+        numPaymentTokensByTokenAddress[ tokenAddress_] += numTokensToPlatform_;
+        emit PlatformCutReceived( msg.sender, numTokensToPlatform_);
     }
 
     function getBlockTimestamp() external view returns(uint) {

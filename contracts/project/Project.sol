@@ -390,24 +390,23 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     }
 
 
-    function _paymentTokenAllowanceFromSender() view private returns(uint) {
-        IERC20 paymentToken_ = IERC20( paymentTokenAddress);
-        return paymentToken_.allowance( msg.sender, address(this) );
-    }
-
-
     function _transferPaymentTokensToVault( uint numPaymentTokens_) private {
         address pledger_ = msg.sender;
         IERC20 paymentToken_ = IERC20( paymentTokenAddress);
 
         require( _paymentTokenAllowanceFromSender() >= numPaymentTokens_, "insufficient token allowance");
 
+        projectVault.increaseBalance( numPaymentTokens_);
+
         bool transferred_ = paymentToken_.transferFrom( pledger_, address(projectVault), numPaymentTokens_);
         require( transferred_, "Failed to transfer payment tokens to vault");
-
-        projectVault.increaseBalance( numPaymentTokens_);
     }
 
+
+    function _paymentTokenAllowanceFromSender() view private returns(uint) {
+        IERC20 paymentToken_ = IERC20( paymentTokenAddress);
+        return paymentToken_.allowance( msg.sender, address(this) );
+    }
 
     function verifyMaxNumPledgesNotExceeded( address addr) private view {
         if (pledgerAddrToEventMap[addr].length >= MAX_NUM_SINGLE_EOA_PLEDGES) {
@@ -512,7 +511,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
             revert BadRewardType(rewardType);
         }
 
-        removeActivePledger( pledgerAddr_);
+        _removeActivePledger( pledgerAddr_);
 
         //@DOS_ATTACK: pledgerAddr_ is assumed to have no motivation for failing trans
     }
@@ -564,7 +563,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
         emit ProjectFailurePledgerRefund( pledgerAddr_, shouldBeRefunded_, actuallyRefunded_);
 
-        removeActivePledger( pledgerAddr_);
+        _removeActivePledger( pledgerAddr_);
     }
 
     function calcPledgerTotalInvestment( PledgeEvent[] storage events) private view returns(uint) {
@@ -601,18 +600,17 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
             revert PledgerGraceExitRefusedTooSoon( block.timestamp, pledgerExitAllowedStartTime);
         }
 
-        projectVault.decreaseTotalDepositsOnPledgerGraceExit( pledgerAddrToEventMap[ pledgerAddr_]);
-
         uint shouldBeRefunded_ = calcOnGracePeriodPTokRefund( pledgerAddr_);
 
         uint actuallyRefunded_ = _pTokRefundToPledger( pledgerAddr_, shouldBeRefunded_);
 
         emit GracePeriodPledgerRefund( pledgerAddr_, shouldBeRefunded_, actuallyRefunded_);
 
-        removeActivePledger( pledgerAddr_);
+        _removeActivePledger( pledgerAddr_);
     }
 
-    function removeActivePledger( address pledgerAddr_) private {
+
+    function _removeActivePledger( address pledgerAddr_) private {
         require( isActivePledger( pledgerAddr_), "not an active pledger");
         uint numPledgeEvents = pledgerAddrToEventMap[ pledgerAddr_].length;
 
@@ -822,15 +820,11 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     function _transferAllVaultFundsToTeamWallet() private {
         uint vaultBalance_ = projectVault.vaultBalance();
-
-        // pass platform cut to platform;
-        uint platformCut_ = _calcPlatformCut( vaultBalance_);
-
-        //projectVault.transferPaymentTokenToTeamWallet( vaultBalance_, platformCut_, _getPlatformAddress());
-        _transferPaymentTokenToTeam( vaultBalance_, platformCut_);
+        _transferPaymentTokenToTeam( vaultBalance_, _getPlatformCutPromils());
     }
 
- function isActivePledger(address addr) public view returns(bool) {
+
+    function isActivePledger(address addr) public view returns(bool) {
         return pledgerAddrToEventMap[ addr].length > 0;
     }
 

@@ -6,7 +6,8 @@ import "../project/PledgeEvent.sol";
 
 interface IVault {
 
-    function transferPaymentTokenToTeamWallet(uint sum_, uint platformCut, address platformAddr_) external;
+    function transferPToksToTeamWallet(uint sum_, uint platformCutPromils_, address platformAddr_) external returns(uint,uint);
+
     function transferPaymentTokensToPledger( address pledgerAddr_, uint sum_) external returns(uint);
 
     function increaseBalance( uint numPaymentTokens_) external;
@@ -14,8 +15,6 @@ interface IVault {
     function vaultBalance() external view returns(uint);
 
     function totalAllPledgerDeposits() external view returns(uint);
-
-    function decreaseTotalDepositsOnPledgerGraceExit(PledgeEvent[] calldata pledgerEvents) external;
 
     function changeOwnership( address project_) external;
     function getOwner() external view returns (address);
