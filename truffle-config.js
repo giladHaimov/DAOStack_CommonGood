@@ -142,8 +142,8 @@ module.exports = {
     // }
   // }
 
-  api_keys: { //hhhh remove key
-       etherscan: 'F8NDNBIIFIT6MG6CE59XF5WG1FHZQ3MTJK'
+  api_keys: {
+       etherscan: 'hhhh apiKey here'
   },
 
   plugins: [
