@@ -5,6 +5,7 @@ platform/artifacts
 @openzeppelin/contracts/utils/introspection/artifacts
 test/.placeholder
 CommonGood.iml
+package-lock.json
 remix-slither-report.json
 remix-compiler.config.js
 build
