@@ -62,10 +62,11 @@ module.exports = {
       disableConfirmationListener: true
     },
     mainnet: {
-      networkCheckTimeout: 10000,
+      networkCheckTimeout: 50000, // 50 secs
       timeoutBlocks: 200,
       provider: function() {
-        return new HDWalletProvider( mnemonic, "https://mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff");
+//        return new HDWalletProvider( mnemonic, "https://mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff");
+        return new HDWalletProvider( mnemonic, "wss://mainnet.infura.io/ws/v3/46b5f53c4fb7487f8a964120bcfb43ff");
       },
       network_id: 1,
       gas: 6721975,
@@ -141,8 +142,8 @@ module.exports = {
     // }
   // }
 
-  api_keys: {
-       etherscan: 'hhh-api-key'
+  api_keys: { //hhhh remove key
+       etherscan: 'F8NDNBIIFIT6MG6CE59XF5WG1FHZQ3MTJK'
   },
 
   plugins: [

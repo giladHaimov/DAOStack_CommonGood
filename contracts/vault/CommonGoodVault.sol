@@ -40,14 +40,16 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
         numPToksInVault = 0;
     }
 
+
     function increaseBalance( uint numPaymentTokens_) external override onlyOwner {
         verifyInitialized();
         _addToBalance( numPaymentTokens_);
         emit PTokPlacedInVault( numPaymentTokens_);
     }
 
+
     function transferPaymentTokensToPledger( address pledgerAddr_, uint numPaymentTokens_)
-                                                    external override onlyOwner returns(uint) {
+                                                external override onlyOwner returns(uint) {
         // can only be invoked by connected project
         // @PROTECT: DoS, Re-entry
         verifyInitialized();
@@ -61,7 +63,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
 
     function transferPToksToTeamWallet( uint totalSumToTransfer_, uint platformCutPromils_, address platformAddr_)
-                                                external override onlyOwner returns(uint,uint) { //@PUBFUNC
+                                         external override onlyOwner returns(uint,uint) { //@PUBFUNC
         // called by project on successful milestone
         // @PROTECT: DoS, Re-entry
         verifyInitialized();
@@ -101,7 +103,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
 
 
-    function calcActualPTokNumAvailableForTransfer( uint shouldBeTranserred_) private returns(uint) {
+    function calcActualPTokNumAvailableForTransfer( uint shouldBeTranserred_) private view returns(uint) {
 
         uint actuallyTransferred_ = shouldBeTranserred_;
 

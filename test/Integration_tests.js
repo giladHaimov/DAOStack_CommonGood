@@ -203,7 +203,7 @@ contract("Project", (accounts_) => {
         console.log(`vault-2: ${vaultTemplateInst.address}`);
         console.log(`platform: ${platformInst.address}`);
 
-        await platformInst.approvePaymentToken( paymentTokenInstance.address, true);
+        await platformInst.approvePTok( paymentTokenInstance.address, true);
 
         await markProjectTeamAsBetaTester( addr1);
    }

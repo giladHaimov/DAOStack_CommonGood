@@ -249,7 +249,7 @@ abstract contract ProjectFactory is BetaTestable, /*Ownable*/ Pausable {
     }
 
 
-    function approvePaymentToken(address paymentTokenAddr_, bool isApproved_) external onlyOwner { //@PUBFUNC
+    function approvePTok(address paymentTokenAddr_, bool isApproved_) external onlyOwner { //@PUBFUNC
         require( paymentTokenAddr_ != address(0), "bad payment token address");
         isApprovedPaymentToken[ paymentTokenAddr_] = isApproved_;
         emit ApprovedPaymentTokenChanged( paymentTokenAddr_, isApproved_);

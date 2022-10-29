@@ -19,7 +19,7 @@ contract("Deployment", (accounts_) => {
 
    const MILLION = 1000000;
 
-   let paymentTokenInstance;
+   let pTokInstance;
    let platformInst;
 
     const addr1 = accounts_[0];
@@ -29,31 +29,38 @@ contract("Deployment", (accounts_) => {
 
 
    beforeEach( async function () {
-        paymentTokenInstance = await Token.deployed();
+        pTokInstance = await Token.deployed();
         platformInst = await Platform.deployed();
 
-        await platformInst.approvePaymentToken( paymentTokenInstance.address, true);
+        const vaultAddr_ = await platformInst.vaultTemplate();
+        await platformInst.approvePTok( pTokInstance.address, true);
         await markProjectTeamAsBetaTester( addr1);
+
+        console.log(`================================================================`);
+        console.log(`       PTok: ${pTokInstance.address}`);
+        console.log(`       vault: ${vaultAddr_}`);
+        console.log(`       platform: ${platformInst.address}`);
+        console.log(`================================================================`);
    });
+
 
 
 /*
     it("Goerli deploy", async () => {
-
           await verifyNetworkId( 5, "Goerli");
 
           await createNewContract();
     });
 */
 
-/*
+
     it("Mainnet deploy", async () => {
 
           await verifyNetworkId( 1, "Mainnet");
 
           await createNewContract();
     });
-*/
+
 
     async function createNewContract() {
 
@@ -67,7 +74,7 @@ contract("Deployment", (accounts_) => {
           let params_ = { tokenName: "tok332",
                           tokenSymbol: "tk4",
                           projectVault: ZERO_ADDR,
-                          paymentToken: paymentTokenInstance.address,
+                          paymentToken: pTokInstance.address,
                           minPledgedSum: MIN_PLEDGE_SUM,
                           initialTokenSupply: 100*MILLION,
                           projectToken: ZERO_ADDR,
@@ -87,9 +94,12 @@ contract("Deployment", (accounts_) => {
 
           const projectAddr_ = await invokeCreateProject( params_, milestones_, addr1);
 
-          console.log(`===>  created project address: ${projectAddr_}`);
-
+          console.log(``);
+          console.log(`================================================================`);
+          console.log(`       proj: ${projectAddr_}`);
+          console.log(`================================================================`);
   }
+
 
    async function invokeCreateProject( params_, milestones_, addr_) {
           let receipt_ = await platformInst.createProject( params_, milestones_, { from: addr_ });
