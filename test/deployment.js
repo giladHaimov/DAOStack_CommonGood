@@ -61,7 +61,7 @@ contract("Deployment", (accounts_) => {
 
           await createNewContract();
     });
-*/
+
 
     async function createNewContract() {
 
