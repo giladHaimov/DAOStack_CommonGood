@@ -44,7 +44,6 @@ contract("Project", (accounts_) => {
    //---
 
    let revertReasonSupported = false;
-   let usePredeployedContracts = false;
 
    let ProjectDeployedAddr;
    let VaultDeployedAddr;
@@ -180,17 +179,10 @@ contract("Project", (accounts_) => {
 
    async function loadAllContractInstances() {
 
-        if (usePredeployedContracts) {
-            paymentTokenInstance = await Token.at( ProjectTokenDeployedAddr);
-            projectTemplateInst  = await Project.at( ProjectDeployedAddr);
-            vaultTemplateInst    = await Vault.at( VaultDeployedAddr);
-            platformInst         = await Platform.at( PlatformDeployedAddr);
-        } else {
-            paymentTokenInstance = await Token.deployed(); // deploy a dedicated instance for payment tokens
-            projectTemplateInst  = await Project.deployed();
-            vaultTemplateInst    = await Vault.deployed();
-            platformInst         = await Platform.deployed();
-        }
+        paymentTokenInstance = await Token.deployed(); // deploy a dedicated instance for payment tokens
+        projectTemplateInst  = await Project.deployed();
+        vaultTemplateInst    = await Vault.deployed();
+        platformInst         = await Platform.deployed();
 
         await mintPaymentTokenToAddress( addr1);
 
@@ -237,19 +229,8 @@ contract("Project", (accounts_) => {
 
             case 5:
               console.log('Testing on Goerli');
-//              usePredeployedContracts = true;
-//
-//              ProjectDeployedAddr = '0x614474df8ab10Ba043A0aFaF3F2E294DC7F1B985';
-//              VaultDeployedAddr = '0x2a17D02EA09394dAe19c6bacf4fec5B1e5e7b6f5';
-//              ProjectTokenDeployedAddr = '0xfD385974F961a477dF389FB3bcBA7aa0743d2443';
-//              PlatformDeployedAddr = '0x4428288031092ec8a2f0ed27dE7eEEF18Be808F8';
-//
-//              addr2 = '0x4857A5e3Cdfd91135CE509867e48C10Bf7380Dbd';
-//              addr3 = '0x7214958FC29ACFAd0450C0881EB916AC172435e2';
-//              addr4 = '0xE76E1fE3501328a2c81eaeb92476213dEA224184';
-              //also: 0xD268CE34B2a1CD9BD9cC80e4f2d4825d498342dc ,
-              //      0x4d6BF011855d8E36A54A2D04d5B5073C4E125b34
-              break
+              break;
+
             default:
               revertReasonSupported = true;
               console.log('Testing on local test env.')

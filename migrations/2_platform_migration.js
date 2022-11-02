@@ -6,6 +6,15 @@ const Platform = artifacts.require("./contracts/platform/Platform.sol");
 
 
 module.exports = async function(deployer) {
+
+  const usePredeployedContracts_ = require('../globals/vars.js').usePredeployedContracts;
+
+  console.log(`migration: usePredeployedContracts = ${usePredeployedContracts_}`);
+
+  if (usePredeployedContracts_) {
+      return; // no new deployments
+  }
+  
   await deployer.deploy(Project);
   const projectTemplate_inst = await Project.deployed();
 

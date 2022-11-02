@@ -27,10 +27,23 @@ contract("Deployment", (accounts_) => {
     const addr3 = accounts_[2];
     const addr4 = accounts_[3];
 
+    const PTOK_CONTRACT_ADDR = 'placeholder';
+    const PLATFORM_CONTRACT_ADDR = 'placeholder';
+
 
    beforeEach( async function () {
-        pTokInstance = await Token.deployed();
-        platformInst = await Platform.deployed();
+
+        const usePredeployedContracts_ = require('../globals/vars.js').usePredeployedContracts;
+
+        console.log(`deployment: usePredeployedContracts = ${usePredeployedContracts_}`);
+
+        if (usePredeployedContracts_) {
+            pTokInstance = await Token.at( PTOK_CONTRACT_ADDR);
+            platformInst = await Platform.at( PLATFORM_CONTRACT_ADDR);
+        } else {
+            pTokInstance = await Token.deployed();
+            platformInst = await Platform.deployed();
+        }
 
         const vaultAddr_ = await platformInst.vaultTemplate();
         await platformInst.approvePTok( pTokInstance.address, true);
