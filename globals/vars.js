@@ -1,5 +1,9 @@
 
 var usePredeployedContracts = false;
 
-exports.usePredeployedContracts = usePredeployedContracts;
+module.exports.usePredeployedContracts = function() {
+   console.log(`deployment: usePredeployedContracts = ${usePredeployedContracts}`);
+   return usePredeployedContracts;
+}
+
 

@@ -1,4 +1,6 @@
 //truffle migrate --compile-none --reset
+const Globals = require('../globals/vars');
+
 const Token   = artifacts.require("./contracts/token/CommonGoodProjectToken.sol");
 const Vault   = artifacts.require("./contracts/vault/CommonGoodVault.sol");
 const Project = artifacts.require("./contracts/project/Project.sol");
@@ -6,15 +8,10 @@ const Platform = artifacts.require("./contracts/platform/Platform.sol");
 
 
 module.exports = async function(deployer) {
-
-  const usePredeployedContracts_ = require('../globals/vars.js').usePredeployedContracts;
-
-  console.log(`migration: usePredeployedContracts = ${usePredeployedContracts_}`);
-
-  if (usePredeployedContracts_) {
+  if (Globals.usePredeployedContracts()) {
       return; // no new deployments
   }
-  
+
   await deployer.deploy(Project);
   const projectTemplate_inst = await Project.deployed();
 

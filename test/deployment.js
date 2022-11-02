@@ -5,6 +5,7 @@ const Web3 = require('web3');
 const BN = require('bn.js');
 const { expectEvent, expectRevert }  = require('@openzeppelin/test-helpers');
 const truffleAssert = require('truffle-assertions');
+const Globals = require('../globals/vars');
 
 const Token   = artifacts.require("./contracts/token/CommonGoodProjectToken.sol");
 const Project = artifacts.require("./contracts/project/Project.sol");
@@ -32,12 +33,7 @@ contract("Deployment", (accounts_) => {
 
 
    beforeEach( async function () {
-
-        const usePredeployedContracts_ = require('../globals/vars.js').usePredeployedContracts;
-
-        console.log(`deployment: usePredeployedContracts = ${usePredeployedContracts_}`);
-
-        if (usePredeployedContracts_) {
+        if (Globals.usePredeployedContracts()) {
             pTokInstance = await Token.at( PTOK_CONTRACT_ADDR);
             platformInst = await Platform.at( PLATFORM_CONTRACT_ADDR);
         } else {
@@ -55,7 +51,6 @@ contract("Deployment", (accounts_) => {
         console.log(`       platform: ${platformInst.address}`);
         console.log(`================================================================`);
    });
-
 
 
 /*
