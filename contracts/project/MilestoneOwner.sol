@@ -28,8 +28,6 @@ abstract contract MilestoneOwner {
 
     address public paymentTokenAddress;
 
-    uint public totalReceivedPToks; // from all pledgers != current vault balance
-
     //-----
 
 
@@ -124,7 +122,8 @@ abstract contract MilestoneOwner {
     function emitOnchainMilestoneNotYetReached( uint milestoneIndex_, Milestone storage milestone_) private {
         MilestoneApprover storage approver_ = milestone_.milestoneApprover;
         if (approver_.fundingPTokTarget > 0) {
-            emit OnchainMilestoneNotYetReached( milestoneIndex_, totalReceivedPToks, approver_.fundingPTokTarget, 0, 0);
+            uint totalReceivedPToks_ = _getProjectVault().getTotalReceivedPToks();
+            emit OnchainMilestoneNotYetReached( milestoneIndex_, totalReceivedPToks_, approver_.fundingPTokTarget, 0, 0);
         } else {
             emit OnchainMilestoneNotYetReached( milestoneIndex_, 0, 0, _getNumPledgersSofar(), approver_.targetNumPledgers);
         }
@@ -198,8 +197,9 @@ abstract contract MilestoneOwner {
         _verifyPrerequisiteWasMet( milestoneIndex_);
 
         if (approver_.fundingPTokTarget > 0) {
-            if (totalReceivedPToks >= approver_.fundingPTokTarget) {
-                emit MilestoneSucceededFunding( approver_.fundingPTokTarget, totalReceivedPToks);
+            uint totalReceivedPToks_ = _getProjectVault().getTotalReceivedPToks();
+            if (totalReceivedPToks_ >= approver_.fundingPTokTarget) {
+                emit MilestoneSucceededFunding( approver_.fundingPTokTarget, totalReceivedPToks_);
                 return true;
             }
             return false;

@@ -57,7 +57,7 @@ module.exports = {
       },
       network_id: 5,
       gas: 6721975,
-      gasPrice: 20000000000,
+      gasPrice: 30675146827,
       pollingInterval: 1800000,
       disableConfirmationListener: true
     },

@@ -26,6 +26,9 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
     uint public numPToksInVault; // all deposits from all pledgers
 
+    uint public totalReceivedPToks; // sum of all PToks added into vault
+
+
     constructor() {
         _initialize();
     }
@@ -38,6 +41,7 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
     function _initialize() private {
         _registerInterface( type(IVault).interfaceId);
         numPToksInVault = 0;
+        totalReceivedPToks = 0;
     }
 
 
@@ -149,8 +153,8 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
         return numPToksInVault;
     }
 
-    function totalAllPledgerDeposits() public view override returns(uint) {
-        return numPToksInVault;
+    function getTotalReceivedPToks() public view override returns(uint) {
+        return totalReceivedPToks;
     }
 
 
@@ -166,10 +170,12 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
     }
 
     function _addToBalance( uint toAdd_) private {
+        totalReceivedPToks += toAdd_;
         numPToksInVault += toAdd_;
     }
 
     function _subtractFromBalance( uint toSubtract_) private {
+        // do not subtract from totalReceivedPToks
         numPToksInVault -= toSubtract_;
     }
 

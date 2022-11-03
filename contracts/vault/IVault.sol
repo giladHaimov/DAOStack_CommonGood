@@ -14,7 +14,7 @@ interface IVault {
 
     function vaultBalance() external view returns(uint);
 
-    function totalAllPledgerDeposits() external view returns(uint);
+    function getTotalReceivedPToks() external view returns(uint);
 
     function changeOwnership( address project_) external;
     function getOwner() external view returns (address);
