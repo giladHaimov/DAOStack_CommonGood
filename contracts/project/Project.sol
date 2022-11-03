@@ -160,6 +160,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         projectState = ProjectState.IN_PROGRESS;
         delegate = address(0);
         projectEndTime = 0;
+        totalReceivedPToks = 0;
         current_endOfGracePeriod = 0;
         onFailureRefundParams =  OnFailureRefundParams( false, 0, 0);
         paymentTokenAddress = params_.paymentToken;
@@ -386,6 +387,8 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         _addNewPledgeEvent( newPledgerAddr_, numPaymentTokens_);
 
         _transferPaymentTokensToVault( numPaymentTokens_);
+
+        totalReceivedPToks += numPaymentTokens_;
     }
 
 

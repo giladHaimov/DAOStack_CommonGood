@@ -40,10 +40,12 @@ contract("Deployment", (accounts_) => {
 
    beforeEach( async function () {
         if (Globals.usePredeployedContracts()) {
-            pTokInstance = await Token.at( PTOK_CONTRACT_ADDR);
+            // use existing platform and PTok contracts:
             platformInst = await Platform.at( PLATFORM_CONTRACT_ADDR);
+            pTokInstance = await Token.at( PTOK_CONTRACT_ADDR);
             await verifyNotInBetaMode();
         } else {
+            // deploy new contracts:
             pTokInstance = await Token.deployed();
             platformInst = await Platform.deployed();
             await disableBetaMode();
@@ -71,13 +73,14 @@ contract("Deployment", (accounts_) => {
 
           const zeroPTok = 0;
 
-          let params_ = { tokenName: "tok332",
+          let params_ = {
+                          projectToken: ZERO_ADDR,  // project-token
+                          tokenName: "tok332",
                           tokenSymbol: "tk4",
-                          projectVault: ZERO_ADDR,
-                          paymentToken: pTokInstance.address,
-                          minPledgedSum: MIN_PLEDGE_SUM,
                           initialTokenSupply: 100*MILLION,
-                          projectToken: ZERO_ADDR,
+                          paymentToken: pTokInstance.address, // PTok
+                          projectVault: ZERO_ADDR,
+                          minPledgedSum: MIN_PLEDGE_SUM,
                           cid: CID_VALUE };
 
           let ts_ = await platformInst.getBlockTimestamp();

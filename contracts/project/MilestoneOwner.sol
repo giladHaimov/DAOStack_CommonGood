@@ -28,10 +28,12 @@ abstract contract MilestoneOwner {
 
     address public paymentTokenAddress;
 
+    uint public totalReceivedPToks; // from all pledgers != current vault balance
+
     //-----
 
 
-    event OnchainMilestoneNotYetReached( uint milestoneIndex_);
+    event OnchainMilestoneNotYetReached( uint milestoneIndex_, uint existingSum, uint requitedSum, uint existingNumPledgers, uint requiredNumPledgers);
 
     event MilestoneSuccess( uint milestoneIndex_);
 
@@ -77,9 +79,7 @@ abstract contract MilestoneOwner {
     modifier onlyExternalApprover( uint milestoneIndex_) {
         MilestoneApprover storage approver_ = milestoneArr[ milestoneIndex_].milestoneApprover;
 
-        if (approver_.externalApprover == address(0)) {
-            revert NotAnExpernallyApprovedMilestone( milestoneIndex_);
-        }
+        require( approver_.externalApprover != address(0), "Not an externally approved milestone");
 
         if (msg.sender != approver_.externalApprover) {
             revert CanOnlyBeInvokedByAMilestoneApprover( milestoneIndex_, approver_.externalApprover, msg.sender);
@@ -114,10 +114,20 @@ abstract contract MilestoneOwner {
         } else if (_onchainMilestoneSucceeded( milestoneIndex_, milestone_)) {
             _onMilestoneSuccess( milestone_, milestoneIndex_);
         } else {
-            emit OnchainMilestoneNotYetReached( milestoneIndex_);
+            emitOnchainMilestoneNotYetReached( milestoneIndex_, milestone_);
         }
 
         require( successfulMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
+    }
+
+
+    function emitOnchainMilestoneNotYetReached( uint milestoneIndex_, Milestone storage milestone_) private {
+        MilestoneApprover storage approver_ = milestone_.milestoneApprover;
+        if (approver_.fundingPTokTarget > 0) {
+            emit OnchainMilestoneNotYetReached( milestoneIndex_, totalReceivedPToks, approver_.fundingPTokTarget, 0, 0);
+        } else {
+            emit OnchainMilestoneNotYetReached( milestoneIndex_, 0, 0, _getNumPledgersSofar(), approver_.targetNumPledgers);
+        }
     }
 
 
@@ -188,9 +198,8 @@ abstract contract MilestoneOwner {
         _verifyPrerequisiteWasMet( milestoneIndex_);
 
         if (approver_.fundingPTokTarget > 0) {
-            uint vaultBalance_ = _getProjectVault().vaultBalance();
-            if (vaultBalance_ >= approver_.fundingPTokTarget) {
-                emit MilestoneSucceededFunding( approver_.fundingPTokTarget, vaultBalance_);
+            if (totalReceivedPToks >= approver_.fundingPTokTarget) {
+                emit MilestoneSucceededFunding( approver_.fundingPTokTarget, totalReceivedPToks);
                 return true;
             }
             return false;

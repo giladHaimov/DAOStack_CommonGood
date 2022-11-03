@@ -32,8 +32,11 @@ contract("Project", (accounts_) => {
    const INITIAL_PLEDGER_PAYMENT_TOKEN_ALLOCATION = _toWei('100');
    const ALLOWANCE_TO_PROJECT           = INITIAL_PLEDGER_PAYMENT_TOKEN_ALLOCATION;
 
-   const MILESTONE_VALUE                = _toWei('1');
-   const MIN_PLEDGE_SUM                 = MILESTONE_VALUE;
+   const MILESTONE_VALUE = _toWei('1');
+   const HALF_MILESTONE_VALUE = _toWei('0.5');
+   const DOUBLE_MILESTONE_VALUE = _toWei('2');
+   const ZERO_VALUE = 0;
+   const MIN_PLEDGE_SUM = MILESTONE_VALUE;
 
    const PLEDGE_SUM_1 = _toWei('1');
    const PLEDGE_SUM_2 = _toWei('4');
@@ -82,19 +85,22 @@ contract("Project", (accounts_) => {
   //======================== test methods ========================
 
    beforeEach( async function () {
-        await createProjectContract();
+        await loadAllContractInstances();
+        //await createProjectContract();
    });
 
 
-  it("Create a project", async () => { //
-       // to run: truffle test  --network goerli
+  it("verifies a project may not be re-initialized", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
-       // created in beforeEach()
       await verifyProjectMayNotBeReinitialized( milestones_);
   });
 
 
   it("executes a successful project", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
       await executeProjectLifecycle(true);
 
@@ -102,7 +108,19 @@ contract("Project", (accounts_) => {
   });
 
 
+  it("executes project with onchain milestones", async () => {
+      let milestones_ = await onchainMilestones();
+      await createProjectContract( milestones_);
+
+      await executeProjectWithOnchainMilestones();
+
+      console.log("successful project with onchain milestones completed");
+  });
+
+
   it("create a project with large milestone count", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
       await createMultiMilestoneProject( 80);
 
@@ -111,6 +129,8 @@ contract("Project", (accounts_) => {
 
 
   it("executes a failed project", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
       await executeProjectLifecycle(false);
 
@@ -120,6 +140,8 @@ contract("Project", (accounts_) => {
 
 
   it("fails if a milestone is overdue", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
       await executeProjectWithOverdueMilestone();
 
@@ -129,6 +151,8 @@ contract("Project", (accounts_) => {
 
 
   it("verifies pledgers can bail out with in grace period", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
       await executeProjectWithGracePeriod();
 
@@ -138,6 +162,8 @@ contract("Project", (accounts_) => {
 
 
   it("verifies 'late' pledgers are correctly processed even after some milestones are approved ", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
       await executeProjectWithLatePledgers();
 
@@ -147,14 +173,16 @@ contract("Project", (accounts_) => {
 
 
   it("tests multiple project deployment", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
 
-      await createProjectContract();
+      await createProjectContract( milestones_);
       await executeProjectLifecycle(false);
 
-      await createProjectContract();
+      await createProjectContract( milestones_);
       await executeProjectLifecycle(true);
 
-      await createProjectContract();
+      await createProjectContract( milestones_);
       await executeProjectLifecycle(true);
 
       console.log("failed project with multiple project deployment");
@@ -163,6 +191,9 @@ contract("Project", (accounts_) => {
 
 
   it("test multi pldege events", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
+
       let receipt;
       receipt = await invokeNewPledge(  MIN_PLEDGE_SUM, addr1 );
       receipt = await invokeNewPledge(  MIN_PLEDGE_SUM, addr1);
@@ -201,7 +232,7 @@ contract("Project", (accounts_) => {
    }
 
 
-   async function createProjectContract() {
+   async function createProjectContract( milestones_) {
 
         const netId = await web3.eth.net.getId();
         console.log(` netId: ${netId}`);
@@ -236,14 +267,10 @@ contract("Project", (accounts_) => {
               console.log('Testing on local test env.')
           }
 
-        console.log(`1st account: ${addr1}`);
-        console.log(`2st account: ${addr2}`);
-        console.log(`3st account: ${addr3}`);
-        console.log(`4st account: ${addr4}`);
-
-        await loadAllContractInstances();
-
-          const zeroPTok = 0;
+          console.log(`1st account: ${addr1}`);
+          console.log(`2st account: ${addr2}`);
+          console.log(`3st account: ${addr3}`);
+          console.log(`4st account: ${addr4}`);
 
           let params_ = { tokenName: "tok332",
                           tokenSymbol: "tk4",
@@ -253,14 +280,6 @@ contract("Project", (accounts_) => {
                           initialTokenSupply: 100*MILLION,
                           projectToken: ZERO_ADDR,
                           cid: CID_VALUE };
-
-          let ts_ = await platformInst.getBlockTimestamp();
-
-          milestones_ = [
-                { milestoneApprover: extApprover_2, prereqInd: -1, pTokValue: zeroPTok,        result: 0, dueDate: addSecs(ts_, 200000) },
-                { milestoneApprover: extApprover_3, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
-                { milestoneApprover: extApprover_4, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
-          ];
 
           const projectAddr_ = await invokeCreateProject( params_, milestones_, addr1);
 
@@ -325,6 +344,31 @@ contract("Project", (accounts_) => {
    let extApprover_2 = { externalApprover: addr2, targetNumPledgers: 0, fundingPTokTarget: 0 };
    let extApprover_3 = { externalApprover: addr3, targetNumPledgers: 0, fundingPTokTarget: 0 };
    let extApprover_4 = { externalApprover: addr4, targetNumPledgers: 0, fundingPTokTarget: 0 };
+
+
+   async function onchainMilestones() {
+        let onchainApprover_1 = { externalApprover: ZERO_ADDR, targetNumPledgers: 1, fundingPTokTarget: 0 };
+        let onchainApprover_2 = { externalApprover: ZERO_ADDR, targetNumPledgers: 0, fundingPTokTarget: MILESTONE_VALUE };
+        let onchainApprover_3 = { externalApprover: ZERO_ADDR, targetNumPledgers: 0, fundingPTokTarget: DOUBLE_MILESTONE_VALUE };
+
+        let ts_ = await platformInst.getBlockTimestamp();
+        milestones_ = [
+              { milestoneApprover: onchainApprover_1, prereqInd: -1, pTokValue: ZERO_VALUE,      result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: onchainApprover_2, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: onchainApprover_3, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
+        ];
+        return milestones_;
+   }
+
+   async function offchainMilestones() {
+        let ts_ = await platformInst.getBlockTimestamp();
+        milestones_ = [
+              { milestoneApprover: extApprover_2, prereqInd: -1, pTokValue: ZERO_VALUE,      result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: extApprover_3, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: extApprover_4, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
+        ];
+        return milestones_;
+   }
 
 
    async function printProjectParams() {
@@ -624,6 +668,42 @@ contract("Project", (accounts_) => {
                        expectedError );
           }
    }
+
+
+    async function verifyMilestoneIsOnchain( ind, errmsg) {
+        if ( !revertReasonSupported) {
+            await expectRevert.unspecified(
+                  thisProjInstance.onExternalApproverResolve(ind, true, 'bla')
+            );
+
+        } else {
+            const expectedError = 'Not an externally approved milestone';
+            await expectRevert(
+                      thisProjInstance.onExternalApproverResolve(ind, true, 'bla'),
+                      expectedError );
+         }
+    }
+
+    async function verifyOnchainMilestoneWasReached( ind) {
+        if ( !revertReasonSupported) {
+            thisProjInstance.checkIfOnchainTargetWasReached(ind);
+
+        } else {
+            let receipt_ = await thisProjInstance.checkIfOnchainTargetWasReached(ind);
+            truffleAssert.eventEmitted( receipt_, 'MilestoneSuccess', (ev) => {
+                return true;
+            });
+         }
+    }
+
+    async function verifyOnchainMilestoneWasNotReached( ind) {
+        let receipt_ = await thisProjInstance.checkIfOnchainTargetWasReached(ind);
+        if (revertReasonSupported) {
+            truffleAssert.eventEmitted( receipt_, 'OnchainMilestoneNotYetReached', (ev) => {
+                return true;
+            });
+         }
+    }
 
     async function verifyMilestoneNotOnchain( ind, errmsg) {
         if ( !revertReasonSupported) {
@@ -1119,6 +1199,94 @@ contract("Project", (accounts_) => {
         await verifyMinPledgeSum();
 
         await verifyProjectMayNotBeReinitialized( milestones_);
+   }
+
+
+   async function executeProjectWithOnchainMilestones() {
+
+        await thisProjInstance.setMinPledgedSum( 100); // basically accept all
+
+        let initTeamWalletBalance = await getPrintableTeamWalletTotal();
+
+        await printProjectParams();
+
+        await verifyMilestoneIsOnchain( 0);
+        await verifyMilestoneIsOnchain( 1);
+        await verifyMilestoneIsOnchain( 2);
+
+        await verifyMilestoneIsNotOverdue( 0);
+
+        await verifyMilestoneIndexIsOOB( 10);
+
+        await verifyOnchainMilestoneWasNotReached( 0);
+        await verifyOnchainMilestoneWasNotReached( 1);
+        await verifyOnchainMilestoneWasNotReached( 2);
+
+        await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr3);
+        await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr4);
+        await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr2); // should also fail: not a pledger
+
+        await verifyPledgerCannotReclaimProjFailurePTok( addr3); // project not failed
+        await verifyPledgerCannotReclaimProjFailurePTok( addr2); // not a pledger
+
+        await verifyPledgerCannotObtainSuccessProjectTokens( addr3); // not successful project
+        await verifyPledgerCannotObtainSuccessProjectTokens( addr2); // not a pledger
+
+
+        await printTeamWalletChanges();
+
+        await verifyActiveProject();
+
+        await verifyMilestoneResult( 0, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 1, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+
+        await issueNewPledge( HALF_MILESTONE_VALUE, addr3);
+
+        await verifyOnchainMilestoneWasReached( 0);
+        await verifyOnchainMilestoneWasNotReached( 1);
+        await verifyOnchainMilestoneWasNotReached( 2);
+
+        await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+
+
+        await issueNewPledge( HALF_MILESTONE_VALUE, addr2);
+
+        await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_UNRESOLVED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
+        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+
+        await verifyOnchainMilestoneWasReached( 1);
+        await verifyOnchainMilestoneWasNotReached( 2);
+
+        await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // now marked as resolved
+        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+
+        await verifyActiveProject();
+
+        // approval should not assume order!
+
+        await printTeamWalletChanges();
+
+        await verifyActiveProject();
+
+        await issueNewPledge( MILESTONE_VALUE, addr4);
+
+        await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
+        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+
+        await verifyOnchainMilestoneWasReached( 2);
+
+        await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // now marked as resolved
+        await verifyMilestoneResult( 2, MILESTONE_SUCCEEDED);
+
+        await actOnSuccessfulProject( true);
+
    }
 
 
