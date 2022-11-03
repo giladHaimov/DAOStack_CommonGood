@@ -1,0 +1,44 @@
+
+
+A. To only deploy platform contract together with other dependencies:
+---------------------------------------------------------------------------
+
+ $truffle migrate --network <mainnet|goerli>
+
+ This will deploy the following:
+      a. Platform
+      b. CommonGoodVault as template
+      c. Project as template
+      d. CommonGoodProjectToken to be used in our tests as externally provide project-token / PTok
+
+
+
+B. To deploy platform + dependencies AND also create and deploy a live project:
+-----------------------------------------------------------------------------------
+
+  a. In globals/vars.js - set usePredeployedContracts = false;
+
+  b. Set the new project's values (milestones, approvers, params) in: deployment.js#deployNewContract()
+
+  c. $truffle test test/deployment.js  --network <mainnet|goerli>
+
+  d. Note: as part of deployment flow beta mode is disabled
+
+
+
+C. To deploy a new live project using pre-deployed platform + dependencies:
+-------------------------------------------------------------------------------
+
+  a. In globals/vars.js - set usePredeployedContracts = true;
+
+  b. In test/deployment.js, set to real addresses:
+       const PTOK_CONTRACT_ADDR = 'placeholder';
+       const PLATFORM_CONTRACT_ADDR = 'placeholder';
+
+  c. Set the new project's values (milestones, approvers, params) in: deployment.js#deployNewContract()
+
+  d. $truffle test test/deployment.js  --network <mainnet|goerli>
+
+  e. Note: the pre-deployed platform contract must not be in beta mode
+
+--

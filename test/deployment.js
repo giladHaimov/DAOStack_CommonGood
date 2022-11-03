@@ -14,11 +14,20 @@ const Platform = artifacts.require("./contracts/platform/Platform.sol");
 
 contract("Deployment", (accounts_) => {
 
+   const PTOK_CONTRACT_ADDR = 'placeholder';
+   const PLATFORM_CONTRACT_ADDR = 'placeholder';
+
    const COIN_UNIT = 'gwei'; //'ether'
 
    const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
    const MILLION = 1000000;
+
+
+   it("Deploy a new project", async () => {
+        await printCurrentNetwork();
+        await deployNewContract();
+   });
 
    let pTokInstance;
    let platformInst;
@@ -28,22 +37,22 @@ contract("Deployment", (accounts_) => {
     const addr3 = accounts_[2];
     const addr4 = accounts_[3];
 
-    const PTOK_CONTRACT_ADDR = 'placeholder';
-    const PLATFORM_CONTRACT_ADDR = 'placeholder';
-
 
    beforeEach( async function () {
         if (Globals.usePredeployedContracts()) {
             pTokInstance = await Token.at( PTOK_CONTRACT_ADDR);
             platformInst = await Platform.at( PLATFORM_CONTRACT_ADDR);
+            await verifyNotInBetaMode();
         } else {
             pTokInstance = await Token.deployed();
             platformInst = await Platform.deployed();
+            await disableBetaMode();
         }
 
         const vaultAddr_ = await platformInst.vaultTemplate();
         await platformInst.approvePTok( pTokInstance.address, true);
-        await markProjectTeamAsBetaTester( addr1);
+
+        //await markProjectTeamAsBetaTester( addr1);
 
         console.log(`================================================================`);
         console.log(`       PTok: ${pTokInstance.address}`);
@@ -53,25 +62,7 @@ contract("Deployment", (accounts_) => {
    });
 
 
-/*
-    it("Goerli deploy", async () => {
-          await verifyNetworkId( 5, "Goerli");
-
-          await createNewContract();
-    });
-*/
-
-
-/*
-    it("Mainnet deploy", async () => {
-
-          await verifyNetworkId( 1, "Mainnet");
-
-          await createNewContract();
-    });
-*/
-
-    async function createNewContract() {
+    async function deployNewContract() {
 
           const MILESTONE_VALUE = _toWei('1');
           const MIN_PLEDGE_SUM = MILESTONE_VALUE;
@@ -141,9 +132,18 @@ contract("Deployment", (accounts_) => {
         return Web3.utils.toWei( val, COIN_UNIT);
    }
 
-   async function markProjectTeamAsBetaTester( teamAddr) {
-        await platformInst.setBetaTester( teamAddr, true);
-    }
+   async function verifyNotInBetaMode() {
+        const inBetaMode_ = await platformInst.inBetaMode();
+        assert.isFalse( inBetaMode_ , "must not be in beta mode");
+   }
+
+   async function disableBetaMode() {
+        await platformInst.setBetaMode( false);
+   }
+
+//   async function markProjectTeamAsBetaTester( teamAddr) {
+//        await platformInst.setBetaTester( teamAddr, true);
+//   }
 
     async function verifyNetworkId( targetId, targetName) {
         const netId = await web3.eth.net.getId();
@@ -155,6 +155,29 @@ contract("Deployment", (accounts_) => {
               break
             default:
               assert.fail(`not on ${targetName}`);
+          }
+     }
+
+     async function printCurrentNetwork() {
+        const networkId = await web3.eth.net.getId();
+        switch (networkId) {
+            case 1:
+              console.log(`==> deploying on mainnet`);
+              break
+            case 2:
+              console.log(`==> deploying on ropsten testnet`);
+              break
+            case 3:
+              console.log(`==> deploying on kovan testnet`);
+              break
+            case 4:
+              console.log(`==> deploying on rinkeby testnet`);
+              break
+            case 5:
+              console.log(`==> deploying on goerli testnet`);
+              break;
+            default:
+              console.log(`==> deploying on testnet with id = ${networkId}`);
           }
      }
 

@@ -82,13 +82,13 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         _;
     }
 
-    modifier onlyIfSenderHasSufficientTokenBalance( uint numPaymentTokens_) {
+    modifier onlyIfSenderHasSufficientPTokBalance( uint numPaymentTokens_) {
         uint tokenBalanceOfPledger_ = IERC20( paymentTokenAddress).balanceOf( msg.sender);
         require( tokenBalanceOfPledger_ >= numPaymentTokens_, "pledger has insufficient token balance");
         _;
     }
 
-    modifier onlyIfSufficientTokenAllowance( uint numPaymentTokens_) {
+    modifier onlyIfSenderProvidesSufficientPTokAllowance( uint numPaymentTokens_) {
         require( _paymentTokenAllowanceFromSender() >= numPaymentTokens_, "modifier: insufficient allowance");
         _;
     }
@@ -364,11 +364,10 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
      * @CROSS_REENTRY_PROTECTION
      */ //@DOC2
     function newPledge(uint numPaymentTokens_, address paymentTokenAddr_)
-                                        external openForAll openForNewPledges
+                                        external openForAll openForNewPledges onlyIfProjectNotCompleted nonReentrant
                                         onlyIfExeedsMinPledgeSum( numPaymentTokens_)
-                                        onlyIfSenderHasSufficientTokenBalance( numPaymentTokens_)
-                                        onlyIfSufficientTokenAllowance( numPaymentTokens_)
-                                        onlyIfProjectNotCompleted nonReentrant { //@PUBFUNC //@PTokTransfer //@PLEDGER
+                                        onlyIfSenderHasSufficientPTokBalance( numPaymentTokens_)
+                                        onlyIfSenderProvidesSufficientPTokAllowance( numPaymentTokens_) { //@PUBFUNC //@PTokTransfer //@PLEDGER
         verifyInitialized();
 
         address newPledgerAddr_ = msg.sender;
