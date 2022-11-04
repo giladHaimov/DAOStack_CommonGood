@@ -118,6 +118,26 @@ contract("Project", (accounts_) => {
   });
 
 
+  it("executes a successful project with hybrid (onchain + offchain) milestones", async () => {
+      let milestones_ = await hybridMilestones();
+      await createProjectContract( milestones_);
+
+      await executeProjectWithHybridMilestones( true);
+
+      console.log("successful project with hybrid milestones completed");
+  });
+
+
+  it("executes a failed project with hybrid (onchain + offchain) milestones", async () => {
+      let milestones_ = await hybridMilestones();
+      await createProjectContract( milestones_);
+
+      await executeProjectWithHybridMilestones( false);
+
+      console.log("failed project with hybrid milestones completed");
+  });
+
+
   it("executes a failed project with onchain milestones", async () => {
       let milestones_ = await onchainMilestones();
       await createProjectContract( milestones_);
@@ -366,6 +386,23 @@ contract("Project", (accounts_) => {
               { milestoneApprover: onchainApprover_1, prereqInd: -1, pTokValue: ZERO_VALUE,      result: 0, dueDate: addSecs(ts_, 200000) },
               { milestoneApprover: onchainApprover_2, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
               { milestoneApprover: onchainApprover_3, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
+        ];
+        return milestones_;
+   }
+
+   async function hybridMilestones() {
+        let onchainApprover_1 = { externalApprover: ZERO_ADDR, targetNumPledgers: 1, fundingPTokTarget: 0 };
+        let onchainApprover_2 = { externalApprover: ZERO_ADDR, targetNumPledgers: 0, fundingPTokTarget: MILESTONE_VALUE };
+        let onchainApprover_3 = { externalApprover: ZERO_ADDR, targetNumPledgers: 0, fundingPTokTarget: DOUBLE_MILESTONE_VALUE };
+
+        let ts_ = await platformInst.getBlockTimestamp();
+        milestones_ = [
+              { milestoneApprover: onchainApprover_1, prereqInd: -1, pTokValue: ZERO_VALUE,      result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: onchainApprover_2, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: onchainApprover_3, prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: extApprover_2,     prereqInd: -1, pTokValue: ZERO_VALUE,      result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: extApprover_3,     prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) },
+              { milestoneApprover: extApprover_4,     prereqInd: -1, pTokValue: MILESTONE_VALUE, result: 0, dueDate: addSecs(ts_, 200000) }
         ];
         return milestones_;
    }
@@ -1284,8 +1321,9 @@ contract("Project", (accounts_) => {
         await verifyActiveProject();
 
         if ( !shouldSucceed) {
-            const lastInd = 2; // last milestone index
             // fail project
+            const lastInd = 2; // last milestone index
+
             await thisProjInstance.backdoor_markMilestoneAsOverdue( lastInd);
 
             await verifyMilestoneIsOverdue( lastInd, true);
@@ -1314,6 +1352,114 @@ contract("Project", (accounts_) => {
 
         await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
         await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // now marked as resolved
+        await verifyMilestoneResult( 2, MILESTONE_SUCCEEDED);
+
+        await actOnSuccessfulProject( true);
+
+   }
+
+
+   async function executeProjectWithHybridMilestones( shouldSucceed) {
+
+        await thisProjInstance.setMinPledgedSum( 100); // basically accept all
+
+        let initTeamWalletBalance = await getPrintableTeamWalletTotal();
+
+        await printProjectParams();
+
+        await verifyMilestoneIsOnchain( 0);
+        await verifyMilestoneIsOnchain( 1);
+        await verifyMilestoneIsOnchain( 2);
+        await verifyMilestoneNotOnchain( 3);
+        await verifyMilestoneNotOnchain( 4);
+        await verifyMilestoneNotOnchain( 5);
+
+        for (let i = 0; i < 6; i++) {
+            await verifyMilestoneIsNotOverdue( i);
+        }
+
+        await verifyMilestoneIndexIsOOB( 10);
+
+        for (let i = 0; i < 3; i++) {
+            await verifyOnchainMilestoneWasNotReached( i);
+        }
+
+        await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr3);
+        await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr4);
+        await verifyPledgerCannotBeRefundedOutsideGracePeriod( addr2);
+
+        await verifyPledgerCannotReclaimProjFailurePTok( addr3); // project not failed
+        await verifyPledgerCannotReclaimProjFailurePTok( addr2);
+
+        await verifyPledgerCannotObtainSuccessProjectTokens( addr3);
+        await verifyPledgerCannotObtainSuccessProjectTokens( addr2);
+
+        await verifyIncorrectApproverCannotApprove( 3, addr3);
+        await verifyIncorrectApproverCannotApprove( 4, addr4);
+        await verifyIncorrectApproverCannotApprove( 5, addr2);
+
+
+        await issueNewPledge( DOUBLE_MILESTONE_VALUE, addr3);
+
+
+        await setMilestoneResult( 5, true, addr4);
+
+        await verifyMilestoneResult( 3, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 4, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 5, MILESTONE_SUCCEEDED);
+
+        await verifyActiveProject();
+
+        await setMilestoneResult( 4, true, addr3);
+
+        await verifyMilestoneResult( 3, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 4, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 5, MILESTONE_SUCCEEDED);
+
+        await verifyActiveProject();
+
+
+        await setMilestoneResult( 3, true, addr2);
+
+        await verifyMilestoneResult( 3, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 4, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 5, MILESTONE_SUCCEEDED);
+
+        await verifyActiveProject();
+
+        await printTeamWalletChanges();
+
+        await verifyActiveProject();
+
+        for (let i = 0; i < 3; i++) {
+            await verifyMilestoneResult( i, MILESTONE_UNRESOLVED);
+        }
+
+        await issueNewPledge( MILESTONE_VALUE, addr2);
+
+        await issueNewPledge( MILESTONE_VALUE, addr4);
+
+
+        await verifyOnchainMilestoneWasReached( 0);
+        await verifyOnchainMilestoneWasReached( 1);
+
+
+        if ( !shouldSucceed) {
+            // fail project
+            await thisProjInstance.backdoor_markMilestoneAsOverdue( 2);
+            await verifyMilestoneIsOverdue( 2, true);
+
+            await thisProjInstance.checkIfOnchainTargetWasReached( 2);
+
+            await verifyMilestoneResult( 2, MILESTONE_FAILED);
+            await actOnFailedProject( -1);
+            return;
+        }
+
+        await verifyOnchainMilestoneWasReached( 2);
+
+        await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED);
         await verifyMilestoneResult( 2, MILESTONE_SUCCEEDED);
 
         await actOnSuccessfulProject( true);
