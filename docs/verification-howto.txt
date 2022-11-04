@@ -1,0 +1,19 @@
+
+To verify the contracts' source code on Etherscan
+-------------------------------------------------------
+
+a. Make sure truffle-plugin-verify is installed, see https://www.npmjs.com/package/truffle-plugin-verify
+         $npm i truffle-plugin-verify
+
+b. Go to ./scripts/verification.scr and set the following script params:
+    NETWORK: goerli|mainnet
+    PLATFORM_ADDR: platform contract address
+    PROJECT_ADDR: project template contract address
+    VAULT_ADDR: vault contract address
+    TOKEN_ADDR: ERC20 token contract address
+
+c. Invoke ./scripts/verification.scr from command-line:
+        $./scripts/verification.scr
+   and make sure all in the script output that all four contracts are marked "Successfully verified"
+
+---
