@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# invoking truffle-plugin-verify
+
+# TODO: set network and addresses
+
+NETWORK=goerli
+PLATFORM_ADDR=0x2901c9E0c828C424D653d72238463Ea892D309fd
+PROJECT_ADDR=0x3459dE1c398cd2A71D6B66F3577d5c94A9453C96
+VAULT_ADDR=0x273e10959A456391a6Ff61D03e1EFB706E9e0337
+TOKEN_ADDR=0x4F1f9888C774dcef7243dff3716Fc69ae39c891D
+
+truffle run verify Platform@${PLATFORM_ADDR} --network ${NETWORK}
+truffle run verify Project@${PROJECT_ADDR} --network ${NETWORK}
+truffle run verify CommonGoodVault@${VAULT_ADDR} --network ${NETWORK}
+truffle run verify CommonGoodProjectToken@${TOKEN_ADDR} --network ${NETWORK}
