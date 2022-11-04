@@ -1,5 +1,3 @@
-//var HDWalletProvider = require("truffle-hdwallet-provider");
-//var mnemonic = "orange apple banana ... ";
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -59,7 +57,8 @@ module.exports = {
       gas: 6721975,
       gasPrice: 30675146827,
       pollingInterval: 1800000,
-      disableConfirmationListener: true
+      disableConfirmationListener: true,
+      skipDryRun: true
     },
     mainnet: {
       networkCheckTimeout: 50000, // 50 secs
@@ -149,7 +148,6 @@ module.exports = {
   plugins: [
           'truffle-plugin-verify',
           'truffle-contract-size'
-//          'solidity-coverage'
         ]
 
 };
