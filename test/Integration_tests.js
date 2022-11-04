@@ -108,13 +108,23 @@ contract("Project", (accounts_) => {
   });
 
 
-  it("executes project with onchain milestones", async () => {
+  it("executes a successful project with onchain milestones", async () => {
       let milestones_ = await onchainMilestones();
       await createProjectContract( milestones_);
 
-      await executeProjectWithOnchainMilestones();
+      await executeProjectWithOnchainMilestones( true);
 
       console.log("successful project with onchain milestones completed");
+  });
+
+
+  it("executes a failed project with onchain milestones", async () => {
+      let milestones_ = await onchainMilestones();
+      await createProjectContract( milestones_);
+
+      await executeProjectWithOnchainMilestones( false);
+
+      console.log("failed project with onchain milestones completed");
   });
 
 
@@ -1202,7 +1212,7 @@ contract("Project", (accounts_) => {
    }
 
 
-   async function executeProjectWithOnchainMilestones() {
+   async function executeProjectWithOnchainMilestones( shouldSucceed) {
 
         await thisProjInstance.setMinPledgedSum( 100); // basically accept all
 
@@ -1258,6 +1268,8 @@ contract("Project", (accounts_) => {
         await verifyMilestoneResult( 1, MILESTONE_UNRESOLVED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
         await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
 
+        await verifyActiveProject();
+
         await verifyOnchainMilestoneWasReached( 1);
         await verifyOnchainMilestoneWasNotReached( 2);
 
@@ -1267,17 +1279,36 @@ contract("Project", (accounts_) => {
 
         await verifyActiveProject();
 
-        // approval should not assume order!
-
         await printTeamWalletChanges();
 
         await verifyActiveProject();
+
+        if ( !shouldSucceed) {
+            const lastInd = 2; // last milestone index
+            // fail project
+            await thisProjInstance.backdoor_markMilestoneAsOverdue( lastInd);
+
+            await verifyMilestoneIsOverdue( lastInd, true);
+            await verifyMilestoneResult( lastInd, MILESTONE_UNRESOLVED);
+
+            // add a pledger with enough funds and verify milestone still fails due to overdue
+            await issueNewPledge( MILESTONE_VALUE, addr4);
+
+            await thisProjInstance.checkIfOnchainTargetWasReached( lastInd);
+
+            await verifyMilestoneResult( lastInd, MILESTONE_FAILED);
+
+            await actOnFailedProject( -1);
+            return;
+        }
 
         await issueNewPledge( MILESTONE_VALUE, addr4);
 
         await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
         await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
         await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+
+        await verifyActiveProject();
 
         await verifyOnchainMilestoneWasReached( 2);
 
