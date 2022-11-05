@@ -38,6 +38,10 @@ contract("Project", (accounts_) => {
    const ZERO_VALUE = 0;
    const MIN_PLEDGE_SUM = MILESTONE_VALUE;
 
+   let pre_teamPTokBalance;
+   let pre_platformPTokBalance;
+   let platformCutPromils;
+
    const PLEDGE_SUM_1 = _toWei('1');
    const PLEDGE_SUM_2 = _toWei('4');
    const PLEDGE_SUM_3 = _toWei('2');
@@ -86,9 +90,19 @@ contract("Project", (accounts_) => {
 
    beforeEach( async function () {
         await loadAllContractInstances();
-        //await createProjectContract();
    });
 
+
+  it("executes a successful project", async () => {
+      let milestones_ = await offchainMilestones();
+      await createProjectContract( milestones_);
+
+      const totalSumPledgedPToks = await executeProjectLifecycle(true);
+
+      await verifyPTokBalanceChanges( totalSumPledgedPToks);
+
+      console.log("successful project test completed");
+  });
 
   it("verifies a project may not be re-initialized", async () => {
       let milestones_ = await offchainMilestones();
@@ -98,21 +112,13 @@ contract("Project", (accounts_) => {
   });
 
 
-  it("executes a successful project", async () => {
-      let milestones_ = await offchainMilestones();
-      await createProjectContract( milestones_);
-
-      await executeProjectLifecycle(true);
-
-      console.log("successful project test completed");
-  });
-
-
   it("executes a successful project with onchain milestones", async () => {
       let milestones_ = await onchainMilestones();
       await createProjectContract( milestones_);
 
-      await executeProjectWithOnchainMilestones( true);
+      const totalSumPledgedPToks = await executeProjectWithOnchainMilestones( true);
+
+      await verifyPTokBalanceChanges( totalSumPledgedPToks);
 
       console.log("successful project with onchain milestones completed");
   });
@@ -122,7 +128,9 @@ contract("Project", (accounts_) => {
       let milestones_ = await hybridMilestones();
       await createProjectContract( milestones_);
 
-      await executeProjectWithHybridMilestones( true);
+      const totalSumPledgedPToks = await executeProjectWithHybridMilestones( true);
+
+      await verifyPTokBalanceChanges( totalSumPledgedPToks);
 
       console.log("successful project with hybrid milestones completed");
   });
@@ -184,7 +192,9 @@ contract("Project", (accounts_) => {
       let milestones_ = await offchainMilestones();
       await createProjectContract( milestones_);
 
-      await executeProjectWithGracePeriod();
+      const totalSumPledgedPToks = await executeProjectWithGracePeriod();
+
+      await verifyPTokBalanceChanges( totalSumPledgedPToks);
 
       console.log("grace period test completed");
 
@@ -195,7 +205,9 @@ contract("Project", (accounts_) => {
       let milestones_ = await offchainMilestones();
       await createProjectContract( milestones_);
 
-      await executeProjectWithLatePledgers();
+      const totalSumPledgedPToks = await executeProjectWithLatePledgers();
+
+      await verifyPTokBalanceChanges( totalSumPledgedPToks);
 
       console.log("late pledgers test completed");
 
@@ -333,6 +345,11 @@ contract("Project", (accounts_) => {
           await setPaymentTokenAllowanceForProject( addr4, ALLOWANCE_TO_PROJECT);
 
           lastTeamWalletBalance = await getPaymentTokenBalance( thisTeamWallet);
+
+          pre_teamPTokBalance = await getTeamPTokBalance();
+          pre_platformPTokBalance = await getPlatformPTokBalance();
+
+          platformCutPromils = await thisProjInstance.getPlatformCutPromils();
    }
 
 
@@ -942,13 +959,14 @@ contract("Project", (accounts_) => {
         verifyLeftApproxEqualsSum( post_teamBalance, pre_teamBalance, milestoneValue_);
   }
 
+
   async function executeProjectWithLatePledgers() {
 
         const initPrintableTeamWallet = await getPrintableTeamWalletTotal();
 
         const teamBalance_0 = await getPaymentTokenBalance( thisTeamWallet);
 
-        await addAllPledgers(); // addr3 + addr4
+        let totalSumPledgedPToks = await addAllPledgers(); // addr3 + addr4
 
         await setMilestoneResultToSuccess( 0, addr2);
 
@@ -965,6 +983,9 @@ contract("Project", (accounts_) => {
 
         // add pledger after first milestone approve
         const additionalPledgeSum = await addSinglePledger( addr2, 2);
+
+        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(additionalPledgeSum));
+
 
         await verifyPledgerCannotExitProject( addr2);
 
@@ -997,6 +1018,8 @@ contract("Project", (accounts_) => {
         await printVaultBalance();
 
         await printTeamWalletTotal( initPrintableTeamWallet);
+
+        return totalSumPledgedPToks;
   }
 
 
@@ -1103,6 +1126,7 @@ contract("Project", (accounts_) => {
 
 
   async function addSinglePledger(addrToAdd, numPledgersSofar) {
+      let totalPledgedPTokSum = 0;
 
       await verifyNumPledgers( numPledgersSofar);
 
@@ -1110,6 +1134,9 @@ contract("Project", (accounts_) => {
       const vaultBalance_0 = await thisProjInstance.getVaultBalance();
 
       let pledge_1 = await issueNewPledge( PLEDGE_SUM_2, addrToAdd);
+
+      totalPledgedPTokSum = new BN(totalPledgedPTokSum).add( new BN(PLEDGE_SUM_2));
+
 
       const teamBalance_1 = await getPaymentTokenBalance( thisTeamWallet);
       const vaultBalance_1 = await thisProjInstance.getVaultBalance();
@@ -1132,6 +1159,9 @@ contract("Project", (accounts_) => {
 
       let pledge_2 = await issueNewPledge( PLEDGE_SUM_3, addrToAdd);
 
+      totalPledgedPTokSum = totalPledgedPTokSum.add( new BN(PLEDGE_SUM_3));
+
+
       const teamBalance_3 = await getPaymentTokenBalance( thisTeamWallet);
       const vaultBalance_3 = await thisProjInstance.getVaultBalance();
 
@@ -1149,6 +1179,9 @@ contract("Project", (accounts_) => {
 
       let pledge_3 = await issueNewPledge( PLEDGE_SUM_4, addrToAdd);
 
+      totalPledgedPTokSum = totalPledgedPTokSum.add( new BN(PLEDGE_SUM_4));
+
+
       const teamBalance_5 = await getPaymentTokenBalance( thisTeamWallet);
       const vaultBalance_5 = await thisProjInstance.getVaultBalance();
 
@@ -1162,6 +1195,7 @@ contract("Project", (accounts_) => {
 
       await verifyNumPledgers( numPledgersSofar+1); // should remain the same
 
+      return totalPledgedPTokSum;
   }
 
 
@@ -1171,11 +1205,15 @@ contract("Project", (accounts_) => {
 
 
   async function addAllPledgers() {
+      let totalSumPledgedPToks = 0;
+
       await verifyNumPledgers(0);
 
       const initBalance_ = await getPaymentTokenBalance( addr3);
 
       await issueNewPledge( PLEDGE_SUM_4, addr3);
+
+      totalSumPledgedPToks = new BN(totalSumPledgedPToks).add( new BN(PLEDGE_SUM_4));
 
       let expected_balance_1 = new BN( initBalance_).sub( new BN( PLEDGE_SUM_4));
       await verifyPaymentTokenBalance( addr3, expected_balance_1);
@@ -1194,6 +1232,8 @@ contract("Project", (accounts_) => {
 
       await issueNewPledge( PLEDGE_SUM_5, addr3);
 
+      totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(PLEDGE_SUM_5));
+
       let expected_balance_2 = expected_balance_1.sub( new BN( PLEDGE_SUM_5));
       await verifyPaymentTokenBalance( addr3, expected_balance_2);
 
@@ -1205,10 +1245,14 @@ contract("Project", (accounts_) => {
 
       await issueNewPledge( PLEDGE_SUM_4, addr4);
 
+      totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(PLEDGE_SUM_4));
+
       await verifyNumEventsForPledger( addr4, 1);
       await verifyNumPledgers(2);
 
       await verifyPledgeEventValueInPTok( addr4, 0, PLEDGE_SUM_4);
+
+      return totalSumPledgedPToks;
   }
 
   async function createMultiMilestoneProject( largeMilestoneCount) {
@@ -1250,6 +1294,7 @@ contract("Project", (accounts_) => {
 
 
    async function executeProjectWithOnchainMilestones( shouldSucceed) {
+        let totalSumPledgedPToks = 0;
 
         await thisProjInstance.setMinPledgedSum( 100); // basically accept all
 
@@ -1290,6 +1335,8 @@ contract("Project", (accounts_) => {
 
         await issueNewPledge( HALF_MILESTONE_VALUE, addr3);
 
+        totalSumPledgedPToks = new BN(totalSumPledgedPToks).add( new BN(HALF_MILESTONE_VALUE));
+
         await verifyOnchainMilestoneWasReached( 0);
         await verifyOnchainMilestoneWasNotReached( 1);
         await verifyOnchainMilestoneWasNotReached( 2);
@@ -1300,6 +1347,8 @@ contract("Project", (accounts_) => {
 
 
         await issueNewPledge( HALF_MILESTONE_VALUE, addr2);
+
+        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(HALF_MILESTONE_VALUE));
 
         await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
         await verifyMilestoneResult( 1, MILESTONE_UNRESOLVED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
@@ -1332,15 +1381,19 @@ contract("Project", (accounts_) => {
             // add a pledger with enough funds and verify milestone still fails due to overdue
             await issueNewPledge( MILESTONE_VALUE, addr4);
 
+            totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(MILESTONE_VALUE));
+
             await thisProjInstance.checkIfOnchainTargetWasReached( lastInd);
 
             await verifyMilestoneResult( lastInd, MILESTONE_FAILED);
 
             await actOnFailedProject( -1);
-            return;
+            return totalSumPledgedPToks;
         }
 
         await issueNewPledge( MILESTONE_VALUE, addr4);
+
+        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(MILESTONE_VALUE));
 
         await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
         await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
@@ -1356,10 +1409,13 @@ contract("Project", (accounts_) => {
 
         await actOnSuccessfulProject( true);
 
+        return totalSumPledgedPToks;
+
    }
 
 
    async function executeProjectWithHybridMilestones( shouldSucceed) {
+        let totalSumPledgedPToks = 0;
 
         await thisProjInstance.setMinPledgedSum( 100); // basically accept all
 
@@ -1401,6 +1457,8 @@ contract("Project", (accounts_) => {
 
         await issueNewPledge( DOUBLE_MILESTONE_VALUE, addr3);
 
+        totalSumPledgedPToks = new BN(totalSumPledgedPToks).add( new BN(DOUBLE_MILESTONE_VALUE));
+
 
         await setMilestoneResult( 5, true, addr4);
 
@@ -1437,7 +1495,12 @@ contract("Project", (accounts_) => {
 
         await issueNewPledge( MILESTONE_VALUE, addr2);
 
+        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(MILESTONE_VALUE));
+
+
         await issueNewPledge( MILESTONE_VALUE, addr4);
+
+        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(MILESTONE_VALUE));
 
 
         await verifyOnchainMilestoneWasReached( 0);
@@ -1453,7 +1516,7 @@ contract("Project", (accounts_) => {
 
             await verifyMilestoneResult( 2, MILESTONE_FAILED);
             await actOnFailedProject( -1);
-            return;
+            return totalSumPledgedPToks;
         }
 
         await verifyOnchainMilestoneWasReached( 2);
@@ -1464,6 +1527,7 @@ contract("Project", (accounts_) => {
 
         await actOnSuccessfulProject( true);
 
+        return totalSumPledgedPToks;
    }
 
 
@@ -1509,7 +1573,7 @@ contract("Project", (accounts_) => {
         // no funds in vault
         await verifyMilestoneApprovalFailsIfInsufficientFundsInVault( 1, addr3);
 
-        await addAllPledgers(); // addr3 + addr4
+        const totalSumPledgedPToks = await addAllPledgers(); // addr3 + addr4
 
         await printVaultBalance();
 
@@ -1544,6 +1608,8 @@ contract("Project", (accounts_) => {
         await printVaultBalance();
 
         await printTeamWalletTotal(initTeamWalletBalance);
+
+        return totalSumPledgedPToks;
    }
 
 
@@ -1711,7 +1777,45 @@ contract("Project", (accounts_) => {
 
    async function markProjectTeamAsBetaTester( teamAddr) {
         await platformInst.setBetaTester( teamAddr, true);
-    }
+   }
+
+   async function getTeamPTokBalance() {
+        const teamWallet = await thisProjInstance.getTeamWallet();
+        const balance = await getPaymentTokenBalance( teamWallet);
+        return balance;
+   }
+
+   async function getPlatformPTokBalance() {
+        const balance = await getPaymentTokenBalance( platformInst.address);
+        return balance;
+   }
+
+   async function diffTeamPTokBalance( prev_balance) {
+        const cur_balance = await getTeamPTokBalance();
+        return new BN(cur_balance).sub( new BN( prev_balance));
+   }
+
+   async function diffPlatformPTokBalance( prev_balance) {
+        const cur_balance = await getPlatformPTokBalance();
+        return new BN(cur_balance).sub( new BN( prev_balance));
+   }
+
+   async function verifyPTokBalanceChanges( totalSumPledgedPToks) {
+         const diff_teamPTokBalance = await diffTeamPTokBalance( pre_teamPTokBalance);
+         const diff_platformPTokBalance = await diffPlatformPTokBalance( pre_platformPTokBalance);
+
+         console.log(`totalSumPledgedPToks: ${totalSumPledgedPToks} , platformCutPromils: ${platformCutPromils}`);
+
+         const expected_platformPTokBalanceDiff = (new BN(totalSumPledgedPToks).mul( new BN(platformCutPromils))).div( new BN(1000));
+         const expected_teamPTokBalanceDiff = new BN(totalSumPledgedPToks).sub( expected_platformPTokBalanceDiff);
+
+         assert.equal( expected_teamPTokBalanceDiff.toString(), diff_teamPTokBalance.toString(), "bad team diff");
+         assert.equal( expected_platformPTokBalanceDiff.toString(), diff_platformPTokBalance.toString(), "bad platform diff");
+
+         console.log(`actual:   Diff team: ${diff_teamPTokBalance} , and platform: ${diff_platformPTokBalance}`);
+
+         console.log(`expected: Diff team: ${expected_teamPTokBalanceDiff} , and platform: ${expected_platformPTokBalanceDiff}`);
+  }
 
 });
 

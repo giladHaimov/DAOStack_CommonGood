@@ -246,7 +246,7 @@ abstract contract MilestoneOwner {
         // pass milestone funds from vault to teamWallet
         require( address(this) == _getProjectVault().getOwner(), "proj contract must own vault");
 
-        _transferPaymentTokenToTeam( value_, _getPlatformCutPromils());
+        _transferPaymentTokenToTeam( value_, getPlatformCutPromils());
     }
 
 
@@ -350,7 +350,7 @@ abstract contract MilestoneOwner {
     function _onProjectFailed() internal virtual;
     function _getProjectVault() internal virtual view returns(IVault);
     function _getNumPledgersSofar() internal virtual view returns(uint);
-    function _getPlatformCutPromils() internal virtual view returns(uint);
+    function getPlatformCutPromils() public virtual view returns(uint);
     function _getPlatformAddress() internal virtual view returns(address);
     function _projectNotCompleted() internal virtual view returns(bool);
 

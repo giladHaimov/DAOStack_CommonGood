@@ -749,7 +749,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
         return projectVault;
     }
 
-    function _getPlatformCutPromils() internal override view returns(uint) {
+    function getPlatformCutPromils() public override view returns(uint) {
         return platformCutPromils;
     }
 
@@ -819,7 +819,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
 
     function _transferAllVaultFundsToTeamWallet() private {
         uint vaultBalance_ = projectVault.vaultBalance();
-        _transferPaymentTokenToTeam( vaultBalance_, _getPlatformCutPromils());
+        _transferPaymentTokenToTeam( vaultBalance_, getPlatformCutPromils());
     }
 
 
