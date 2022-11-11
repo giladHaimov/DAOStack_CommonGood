@@ -69,6 +69,11 @@ abstract contract MilestoneOwner {
         _;
     }
 
+    modifier onlyIfUnresolved( uint milestoneIndex_) {
+        require( milestoneArr[milestoneIndex_].result == MilestoneResult.UNRESOLVED, "milestone already resolved");
+        _;
+    }
+
     modifier onlyIfOnchain( uint milestoneIndex_) {
         require( milestoneArr[milestoneIndex_].milestoneApprover.externalApprover == address(0), "milestone not onchain");
         _;
@@ -101,7 +106,8 @@ abstract contract MilestoneOwner {
  */
     function checkIfOnchainTargetWasReached(uint milestoneIndex_)
                                                 external openForAll onlyIfProjectNotCompleted
-                                                onlyIfOnchain( milestoneIndex_) /*even if paused*/ { //@PUBFUNC
+                                                onlyIfOnchain( milestoneIndex_)
+                                                onlyIfUnresolved( milestoneIndex_) /*even if paused*/ { //@PUBFUNC
 
         uint initial_numCompleted = successfulMilestoneIndexes.length;
 
@@ -147,9 +153,10 @@ abstract contract MilestoneOwner {
  *
  * @event: OnProjectFailed, MilestoneFailedByExternalApprover or MilestoneSucceededByExternalApprover
  */ //@DOC3
-    function onExternalApproverResolve(uint milestoneIndex_, bool succeeded, string calldata reason)
-                                external onlyIfProjectNotCompleted onlyExternalApprover( milestoneIndex_)
-                                /*even if paused*/ { //@PUBFUNC
+    function onExternalApproverResolve(uint milestoneIndex_, bool succeeded, string calldata reason) external
+                                        onlyIfProjectNotCompleted
+                                        onlyExternalApprover( milestoneIndex_)
+                                        onlyIfUnresolved( milestoneIndex_) /*even if paused*/ { //@PUBFUNC
 
         uint initial_numCompleted = successfulMilestoneIndexes.length;
 
