@@ -188,12 +188,6 @@ abstract contract MilestoneOwner {
     }
 
 
-    function _verifyUnresolved( uint milestoneIndex, Milestone storage milestone_) private view {
-        if (milestone_.result != MilestoneResult.UNRESOLVED) {
-            revert MilestoneIsAlreadyResolved(milestoneIndex);
-        }
-    }
-
 
     function _onchainMilestoneSucceeded( uint milestoneIndex_, Milestone storage milestone_)
                                                         private onlyIfOnchain( milestoneIndex_)
@@ -265,9 +259,10 @@ abstract contract MilestoneOwner {
         IPlatform( platformAddr_).onReceivePaymentTokens( paymentTokenAddress, platformCut_);
     }
 
+
     function _failIfOverdue( uint milestoneIndex_, Milestone storage milestone_) internal returns(bool) {
 
-        _verifyUnresolved( milestoneIndex_, milestone_); // must check first!
+        require( milestone_.result == MilestoneResult.UNRESOLVED, "milestone already resolved"); // must check first!
 
         if (milestoneIsOverdue( milestoneIndex_)) {
             _setMilestoneResult( milestone_,  MilestoneResult.FAILED);
