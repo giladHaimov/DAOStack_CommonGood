@@ -149,7 +149,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
      *
      * @event: none
      */
-    function initialize( ProjectInitParams memory params_) external override  onlyIfNotInitialized {
+    function initialize( ProjectInitParams memory params_) external override  onlyIfNotInitialized { //@PUBFUNC
         markAsInitialized( params_.projectTeamWallet);
 
         require( params_.paymentToken != address(0), "missing payment token");
@@ -319,14 +319,14 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
     }
 
 /*
- * @title clearTeamWallet()
+ * @title renounceOwnershipOfProject()
  *
- * @dev allow  project owner = team wallet to renounce Ownership on project by setting owner address to null
+ * @dev allow  project owner = team wallet to renounce Ownership on project by setting the project's owner address to null
  *  Can only be applied for a completed project with zero internal funds
  *
  * @event: TeamWalletRenounceOwnership
  */
-    function clearTeamWallet() external onlyOwner onlyIfProjectCompleted  { //@PUBFUNC
+    function renounceOwnershipOfProject() external onlyOwner onlyIfProjectCompleted  { //@PUBFUNC
         if ( !projectIsCompleted()) {
             revert OperationCannotBeAppliedToRunningProject(projectState);
         }
@@ -336,7 +336,6 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable, Initial
             revert OperationCannotBeAppliedWhileFundsInVault(vaultBalance_);
         }
 
-        // renounce ownership:
         renounceOwnership();
 
         emit TeamWalletRenounceOwnership();
