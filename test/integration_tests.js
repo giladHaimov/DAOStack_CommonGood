@@ -1393,19 +1393,19 @@ contract("Project", (accounts_) => {
 
         await issueNewPledge( MILESTONE_VALUE, addr4);
 
-        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN(MILESTONE_VALUE));
+        totalSumPledgedPToks = totalSumPledgedPToks.add( new BN( MILESTONE_VALUE));
 
         await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
-        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
-        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED);
+        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 2, MILESTONE_UNRESOLVED); // milestone remains unresolved until checkIfOnchainTargetWasReached() is invoked
 
         await verifyActiveProject();
 
         await verifyOnchainMilestoneWasReached( 2);
 
         await verifyMilestoneResult( 0, MILESTONE_SUCCEEDED);
-        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED); // now marked as resolved
-        await verifyMilestoneResult( 2, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 1, MILESTONE_SUCCEEDED);
+        await verifyMilestoneResult( 2, MILESTONE_SUCCEEDED); // now marked as resolved
 
         await actOnSuccessfulProject( true);
 
