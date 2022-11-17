@@ -73,6 +73,20 @@ module.exports = {
       pollingInterval: 1800000,
       disableConfirmationListener: true
     },
+    polygon: { // = polygon mainnet
+      provider: () => new HDWalletProvider( mnemonic, `https://rpc-mainnet.matic.network`),
+      network_id: 137,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
+    mumbai: { // = polygon testnet
+      provider: () => new HDWalletProvider( mnemonic, `https://rpc-mumbai.maticvigil.com`),
+      network_id: 80001,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port
