@@ -1,8 +1,5 @@
 //ganache-cli --fork --port 9545 https://mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff
 
-// TODO >> switch to the 'old' variant of tests once @INTERMEDIATE_BENEFITS_DISABLED is active
-
-
 const Web3 = require('web3');
 const BN = require('bn.js');
 const { expectEvent, expectRevert }  = require('@openzeppelin/test-helpers');
@@ -199,7 +196,7 @@ contract("Project", (accounts_) => {
 
       const totalSumPledgedPToks = await executeProjectWithGracePeriod();
 
-      await verifyProjectState( PROJECT_IN_PROGRESS);
+      await verifyOnSuccessPTokBalances( totalSumPledgedPToks);
 
       console.log("grace period test completed");
 
@@ -371,14 +368,15 @@ contract("Project", (accounts_) => {
    }
 
     async function mintPaymentTokenToAddress(  addr_) {
-        let pre_balance = await getPaymentTokenBalance( addr_);
+           let pre_balance = await getPaymentTokenBalance( addr_);
 
-        await paymentTokenInstance.mint( addr_, INITIAL_PLEDGER_PAYMENT_TOKEN_ALLOCATION);
+           await paymentTokenInstance.mint( addr_, INITIAL_PLEDGER_PAYMENT_TOKEN_ALLOCATION);
 
-        let post_balance = await getPaymentTokenBalance( addr_);
-        let actualDiff = post_balance.sub( new BN(pre_balance));
+           let post_balance = await getPaymentTokenBalance( addr_);
 
-        assert.equal( actualDiff.toString(), INITIAL_PLEDGER_PAYMENT_TOKEN_ALLOCATION, "bad pledgerTokenAmount");
+           let actualDiff = post_balance.sub( new BN(pre_balance));
+
+           assert.equal( actualDiff.toString(), INITIAL_PLEDGER_PAYMENT_TOKEN_ALLOCATION, "bad pledgerTokenAmount");
     }
 
 
@@ -489,8 +487,6 @@ contract("Project", (accounts_) => {
 
         let pre_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
 
-        let pre_totalVaultBalance = await getTotalBalanceTeamPlusPledgersInVault();
-
         await thisProjInstance.onExternalApproverResolve( ind, true, 'bla bla', { from: approverAddr });
 
         let post_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
@@ -499,76 +495,11 @@ contract("Project", (accounts_) => {
             await verifyFailedProject( -1);
             assert.equal( post_vaultBalance.toString(), pre_vaultBalance.toString(), "vault balance should not pass to team wallet on failure");
             await verifyMilestoneResult( ind, MILESTONE_FAILED);
-            await onProjectCompleteVerifyVaultBalance( pre_totalVaultBalance, false);
+            await verifyVaultBalanceEquals( pre_vaultBalance);
             return false;
         }
 
         assert.fail("approval must result in failure");
-   }
-
-
-   let g_prePlatformBalance ;
-   let g_preTeamWalletBalance;
-   let g_preTeamVaultBalance;
-   let g_prePledgersVaultBalance;
-
-   let g_postPlatformBalance ;
-   let g_postTeamWalletBalance;
-   let g_postTeamVaultBalance;
-   let g_postPledgersVaultBalance;
-
-
-   async function getPreBalances() {
-        g_prePlatformBalance = await getPlatformPTokBalance();
-        g_preTeamWalletBalance = await getPaymentTokenBalance( thisTeamWallet);
-        g_preTeamVaultBalance = await thisProjInstance.getTeamBalanceInVault();
-        g_prePledgersVaultBalance = await thisProjInstance.getPledgersBalanceInVault(); // ==pledger balance in vault
-   }
-
-
-   async function getPostBalances() {
-        g_postPlatformBalance = await getPlatformPTokBalance();
-        g_postTeamWalletBalance = await getPaymentTokenBalance( thisTeamWallet);
-        g_postTeamVaultBalance = await thisProjInstance.getTeamBalanceInVault();
-        g_postPledgersVaultBalance = await thisProjInstance.getPledgersBalanceInVault(); // ==pledger balance in vault
-   }
-
-
-   async function verifyFailedProjectBalances() {
-        // all team funds should be moved to pledgers: see projectVault.onFailureMoveTeamFundsToPledgers();
-        let expected_PledgersVaultBalance = new BN(g_prePledgersVaultBalance).add( new BN(g_preTeamVaultBalance));
-        assert.equal( g_postPledgersVaultBalance.toString(), expected_PledgersVaultBalance.toString(),  "verifyFailedProjectBalances: g_preTeamVaultBalance");
-        assert.equal( g_postTeamVaultBalance.toString(), '0',  "verifyFailedProjectBalances: g_preTeamVaultBalance");
-
-        assert.equal( g_postTeamWalletBalance.toString(), g_preTeamWalletBalance.toString(),  "verifyFailedProjectBalances: g_postTeamWalletBalance");
-        assert.equal( g_postPlatformBalance.toString(), g_prePlatformBalance.toString(),  "verifyFailedProjectBalances: g_postPlatformBalance");
-   }
-
-
-   async function verifySuccessfulProjectBalances() {
-        let platformCutInPToks = new BN(g_postPlatformBalance).sub( new BN(g_prePlatformBalance));
-
-        // upon successful project completion all funds, minus platform cut, are transferred to team wallet
-        assert.equal( g_postPledgersVaultBalance.toString(), '0',  "on success: bad pledgers Balance in vault");
-        assert.equal( g_postTeamVaultBalance.toString(), '0',  "on success: bad team Balance in vault");
-
-        let expected_teamWalletBalance =  new BN( g_preTeamWalletBalance)
-                    .add( new BN( g_preTeamVaultBalance))
-                    .add( new BN( g_prePledgersVaultBalance))
-                    .sub( platformCutInPToks);
-
-        assert.equal( g_postTeamWalletBalance.toString(), expected_teamWalletBalance.toString(),  "on success: bad post_teamWalletBalance");
-   }
-
-
-   async function verifyNoPToksWereTransferredToTeamWallet( milestoneValue) {
-        let expected_pledgersBalance = g_prePledgersVaultBalance.sub(milestoneValue);
-        let expected_teamBalance = g_preTeamVaultBalance.add(milestoneValue);
-
-        assert.equal( g_postTeamWalletBalance.toString(), g_preTeamWalletBalance.toString(), "teamWalletBalance changed");
-
-        assert.equal( expected_pledgersBalance.toString(), g_postPledgersVaultBalance.toString(), "bad pledgers Balance");
-        assert.equal( expected_teamBalance.toString(), g_postTeamVaultBalance.toString(), "bad team Balance");
    }
 
 
@@ -577,40 +508,41 @@ contract("Project", (accounts_) => {
 
         let milestoneValue = await getMilestoneValue( ind);
 
-        await getPreBalances();
+        let pre_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
 
         await verifyActiveProject();
 
         await thisProjInstance.onExternalApproverResolve( ind, succeeded, 'bla bla', { from: approverAddr });
 
-        await getPostBalances();
+        let post_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
 
         // below must be called after each onExternalApproverResolve() to verify not failed due to milestone overdue
         if (PROJECT_FAILED == await thisProjInstance.getProjectState()) {
             await verifyFailedProject( -1);
+            assert.equal( post_vaultBalance.toString(), pre_vaultBalance.toString(), "vault balance should remain unchanged");
             await verifyMilestoneResult( ind, MILESTONE_FAILED);
-            await verifyFailedProjectBalances();
+            await verifyVaultBalanceEquals( pre_vaultBalance);
             return false;
         }
 
-
         if (succeeded) {
-            await verifyMilestoneResult( ind, MILESTONE_SUCCEEDED);
+            // milestoneValue moved from vault to team wallet
+            let expectedVaultBalance = pre_vaultBalance.sub(milestoneValue);
 
             const projectState = await thisProjInstance.getProjectState();
-
             if (projectState == PROJECT_SUCCEEDED) {
                 await verifySuccessfulProject();
-                await verifySuccessfulProjectBalances();
-            } else {
-                // project still running: verify no leaks from vault
-                await verifyNoPToksWereTransferredToTeamWallet( milestoneValue);
+                // upon successful project completion all funds are transferred to team wallet
+                expectedVaultBalance = 0;
             }
 
+            assert.equal( post_vaultBalance.toString(), expectedVaultBalance.toString(), "milestone sum not added to vault balance");
+            await verifyMilestoneResult( ind, MILESTONE_SUCCEEDED);
+
         } else {
+            assert.equal( post_vaultBalance.toString(), pre_vaultBalance.toString(), "vault balance should remain unchanged");
             await verifyMilestoneResult( ind, MILESTONE_FAILED);
             await verifyFailedProject( -1);
-            assert.equal( post_vaultBalance.toString(), pre_vaultBalance.toString(), "vault balance should remain unchanged");
         }
 
         return succeeded;
@@ -684,14 +616,11 @@ contract("Project", (accounts_) => {
 
       async function issueNewPledge( pledgeSumWei, pledgerAddr) {
 
-         const pre_vaultBalance = await thisProjInstance.getPledgersBalanceInVault();
-         const pre_pledgerPTokBalance = await getPaymentTokenBalance( pledgerAddr);
+         const pre_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
+         const pre_pledgerBalance = await getPaymentTokenBalance( pledgerAddr);
 
          const pre_NumPledgers = (await thisProjInstance.numPledgersSofar()).toNumber();
          const pre_NumEvents = (await thisProjInstance.getNumEventsForPledger(pledgerAddr)).toNumber();
-
-         console.log(`pre-newPledge:  pre_vaultBalance = ${pre_vaultBalance}, pre_pledgerPTokBalance = ${pre_pledgerPTokBalance},
-           pre_NumPledgers = ${pre_NumPledgers}  ,  pre_NumEvents = ${pre_NumEvents}`);
 
 
          await verifyAllowanceCoversPledgedSum( pledgeSumWei, pledgerAddr);
@@ -715,20 +644,14 @@ contract("Project", (accounts_) => {
 
          const post_NumPledgers = await thisProjInstance.numPledgersSofar();
 
-         const post_vaultBalance = await thisProjInstance.getPledgersBalanceInVault();
-         const post_pledgerPTokBalance = await getPaymentTokenBalance( pledgerAddr);
-
-
-         console.log(`post-newPledge: pledgeSumWei = ${pledgeSumWei} ,
-            post_vaultBalance = ${post_vaultBalance}, post_pledgerPTokBalance = ${post_pledgerPTokBalance},
-            post_NumPledgers = ${post_NumPledgers}  ,  post_NumEvents = ${post_NumEvents}`);
-
+         const post_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
+         const post_pledgerBalance = await getPaymentTokenBalance( pledgerAddr);
 
          const expected_vaultBalance = pre_vaultBalance.add( new BN(pledgeSumWei));
-         const expected_pledgerPTokBalance = pre_pledgerPTokBalance.sub( new BN(pledgeSumWei));
+         const expected_pledgerBalance = pre_pledgerBalance.sub( new BN(pledgeSumWei));
 
          assert.equal( post_vaultBalance.toString(), expected_vaultBalance.toString(), "incorrect vault balance");
-         assert.equal( post_pledgerPTokBalance.toString(), expected_pledgerPTokBalance.toString(), "incorrect pledger balance");
+         assert.equal( post_pledgerBalance.toString(), expected_pledgerBalance.toString(), "incorrect pledger balance");
 
          console.log(`add to vault : pre_vaultBalance : ${pre_vaultBalance} ,  pre_vaultBalance: ${pre_vaultBalance} , pledgeSumWei = ${pledgeSumWei} `);
 
@@ -950,22 +873,11 @@ contract("Project", (accounts_) => {
     }
 
 
-    async function onProjectCompleteVerifyVaultBalance( expected_vaultBalance, projectSucceeded_) {
-        let teamBalance_ = await thisProjInstance.getTeamBalanceInVault();
-        let pledgersBalance_ = await thisProjInstance.getPledgersBalanceInVault();
+    async function verifyVaultBalanceEquals( expected_vaultBalance) {
+        let curr_vaultBalance = await thisProjInstance.getTeamBalanceInVault();
+        console.log(`Vault balance in payment tokens: ${curr_vaultBalance}`);
 
-        console.log(`teamBalance_: ${teamBalance_} , pledgersBalance_: ${pledgersBalance_} ,
-                    expected_vaultBalance: ${expected_vaultBalance} , projectSucceeded_: ${projectSucceeded_}  `);
-
-        if (projectSucceeded_) {
-            // all funds transferred to team wallet
-            assert.equal( new BN(teamBalance_).toString(), '0', "onProjectComplete/success: teamBalance_ zero");
-            assert.equal( new BN(pledgersBalance_).toString(), '0', "onProjectComplete/success: pledgersBalance_ zero");
-        } else {
-            // failed: move all funds to pledgers
-            assert.equal( new BN(teamBalance_).toString(), '0', "onProjectComplete/failure: teamBalance_ zero");
-            assert.equal( new BN(pledgersBalance_).toString(), expected_vaultBalance.toString(), "onProjectComplete/failure: expected_vaultBalance");
-        }
+        assert.equal( curr_vaultBalance.toString(), expected_vaultBalance.toString(), "incorrect vault balance");
     }
 
   async function printCurrentBlockTimestamp() {
@@ -1092,6 +1004,9 @@ contract("Project", (accounts_) => {
 
         const teamBalance_7 = await getPaymentTokenBalance( thisTeamWallet);
 
+        //do not run test below here - after project successful end ALL vault funds are moved to team wallet
+        //----verifyLeftApproxEqualsSum( teamBalance_7, teamBalance_6, milestoneValue_1);
+
         await actOnSuccessfulProject( true);
 
         await printVaultBalance();
@@ -1113,9 +1028,18 @@ contract("Project", (accounts_) => {
         assert.isTrue( equal_, "verifyLeftApproxEqualsSum failed");
   }
 
+  function verifyLeftEqualsSum( leftVal, rightVal_1, rightVal_2) {
+        let rightSum = new BN(rightVal_1).add( new BN( rightVal_2));
+        let equals_ = new BN(leftVal).eq( rightSum);
+        if ( !equals_) {
+            console.log(`++++verifyLeftEqualsSum:  leftVal = ${leftVal}, rightVal_1 = ${rightVal_1} , rightVal_2 = ${rightVal_2} `);
+        }
+        assert.isTrue( equals_, "verifyLeftEqualsSum failed");
+  }
+
 
   async function getMilestoneValue( ind_) {
-        return await thisProjInstance.getMilestoneValueInPaymentTokens( ind_);
+    return await thisProjInstance.getMilestoneValueInPaymentTokens( ind_);
   }
 
 
@@ -1194,38 +1118,26 @@ contract("Project", (accounts_) => {
   }
 
 
-  async function issueNewPledge_verifyBalances( sum_, addrToAdd) {
-
-      let pre_pledgersVaultBalance = await thisProjInstance.getPledgersBalanceInVault();
-      let pre_teamVaultBalance = await thisProjInstance.getTeamBalanceInVault();
-
-      let pledge_ = await issueNewPledge( sum_, addrToAdd)
-
-      let post_pledgersVaultBalance = await thisProjInstance.getPledgersBalanceInVault();
-      let post_teamVaultBalance = await thisProjInstance.getTeamBalanceInVault();
-
-      assert.equal( post_teamVaultBalance.toString(), pre_teamVaultBalance.toString(), 'postTeamVaultBalance_ <> pre');
-
-      let expected_balance = new BN( pre_pledgersVaultBalance).add( new BN(sum_));
-      assert.equal( new BN(post_pledgersVaultBalance).toString(), expected_balance.toString(), 'expected_balance not reached');
-
-      return pledge_;
-  }
-
 
   async function addSinglePledger(addrToAdd, numPledgersSofar) {
       let totalPledgedPTokSum = 0;
 
       await verifyNumPledgers( numPledgersSofar);
 
-      let pledge_1 = await issueNewPledge_verifyBalances( PLEDGE_SUM_2, addrToAdd);
+      const teamBalance_0 = await getPaymentTokenBalance( thisTeamWallet);
+      const vaultBalance_0 = await thisProjInstance.getTeamBalanceInVault();
+
+      let pledge_1 = await issueNewPledge( PLEDGE_SUM_2, addrToAdd);
 
       totalPledgedPTokSum = new BN(totalPledgedPTokSum).add( new BN(PLEDGE_SUM_2));
+
 
       const teamBalance_1 = await getPaymentTokenBalance( thisTeamWallet);
       const vaultBalance_1 = await thisProjInstance.getTeamBalanceInVault();
 
-      //verifyEqualValues( teamBalance_0, teamBalance_1, "pledge must not go directly to team");
+      verifyEqualValues( teamBalance_0, teamBalance_1, "pledge must not go directly to team");
+
+      verifyLeftEqualsSum( vaultBalance_1, vaultBalance_0, PLEDGE_SUM_2);
 
 
       await verifyPledgeEventValueInPTok( addrToAdd, 0, PLEDGE_SUM_2);
@@ -1239,9 +1151,17 @@ contract("Project", (accounts_) => {
       const teamBalance_2 = await getPaymentTokenBalance( thisTeamWallet);
       const vaultBalance_2 = await thisProjInstance.getTeamBalanceInVault();
 
-      let pledge_2 = await issueNewPledge_verifyBalances( PLEDGE_SUM_3, addrToAdd);
+      let pledge_2 = await issueNewPledge( PLEDGE_SUM_3, addrToAdd);
 
       totalPledgedPTokSum = totalPledgedPTokSum.add( new BN(PLEDGE_SUM_3));
+
+
+      const teamBalance_3 = await getPaymentTokenBalance( thisTeamWallet);
+      const vaultBalance_3 = await thisProjInstance.getTeamBalanceInVault();
+
+      verifyEqualValues( teamBalance_3, teamBalance_2, "pledge must not go directly to team /2");
+
+      verifyLeftEqualsSum( vaultBalance_3, vaultBalance_2, PLEDGE_SUM_3);
 
       await verifyNumEventsForPledger( addrToAdd, 2);
 
@@ -1251,9 +1171,17 @@ contract("Project", (accounts_) => {
       const teamBalance_4 = await getPaymentTokenBalance( thisTeamWallet);
       const vaultBalance_4 = await thisProjInstance.getTeamBalanceInVault();
 
-      let pledge_3 = await issueNewPledge_verifyBalances( PLEDGE_SUM_4, addrToAdd);
+      let pledge_3 = await issueNewPledge( PLEDGE_SUM_4, addrToAdd);
 
       totalPledgedPTokSum = totalPledgedPTokSum.add( new BN(PLEDGE_SUM_4));
+
+
+      const teamBalance_5 = await getPaymentTokenBalance( thisTeamWallet);
+      const vaultBalance_5 = await thisProjInstance.getTeamBalanceInVault();
+
+      verifyEqualValues( teamBalance_5, teamBalance_4, "pledge must not go directly to team /3");
+
+      verifyLeftEqualsSum( vaultBalance_5, vaultBalance_4, PLEDGE_SUM_4);
 
       await verifyPledgeEventValueInPTok( addrToAdd, 2, PLEDGE_SUM_4);
 
@@ -1337,6 +1265,8 @@ contract("Project", (accounts_) => {
 
         let milestones_ = [];
 
+        //await platformInst.setMilestoneMinMaxCounts( 1, largeMilestoneCount+1);
+
         for (let i = 0; i < largeMilestoneCount; i++) {
               milestones_[i] =
                 { milestoneApprover: extApprover_2, prereqInd: -1, pTokValue: zeroPTok, result: 0, dueDate: addSecs(ts_, 200000) }
@@ -1385,7 +1315,8 @@ contract("Project", (accounts_) => {
         await verifyPledgerCannotReclaimProjFailurePTok( addr3); // project not failed
         await verifyPledgerCannotReclaimProjFailurePTok( addr2); // not a pledger
 
-        await verifyZeroBenefitsToWithdraw( addr2, false); // not a pledger
+        //await verifyPledgerCannotObtainSuccessProjectTokens( addr3); // not successful project
+        await verifyPledgerCannotObtainSuccessProjectTokens( addr2); // not a pledger
 
 
         await printTeamWalletChanges();
@@ -1510,6 +1441,9 @@ contract("Project", (accounts_) => {
         await verifyPledgerCannotReclaimProjFailurePTok( addr3); // project not failed
         await verifyPledgerCannotReclaimProjFailurePTok( addr2);
 
+//        await verifyPledgerCannotObtainSuccessProjectTokens( addr3);
+//        await verifyPledgerCannotObtainSuccessProjectTokens( addr2);
+
         await verifyIncorrectApproverCannotApprove( 3, addr3);
         await verifyIncorrectApproverCannotApprove( 4, addr4);
         await verifyIncorrectApproverCannotApprove( 5, addr2);
@@ -1615,7 +1549,8 @@ contract("Project", (accounts_) => {
         await verifyPledgerCannotReclaimProjFailurePTok( addr3); // project not failed
         await verifyPledgerCannotReclaimProjFailurePTok( addr2); // not a pledger
 
-        await verifyZeroBenefitsToWithdraw( addr2, false); // not a pledger
+//        await verifyPledgerCannotObtainSuccessProjectTokens( addr3); // not successful project
+        await verifyPledgerCannotObtainSuccessProjectTokens( addr2); // not a pledger
 
 
         await printTeamWalletChanges();
@@ -1638,8 +1573,8 @@ contract("Project", (accounts_) => {
 
         const totalSumPledgedPToks = await addAllPledgers(); // addr3 + addr4
 
-        await verifyNoIntermediateWithdraw( addr3);
-        await verifyNoIntermediateWithdraw( addr4);
+        await verifyZeroBenefitsToWithdraw( addr3);
+        await verifyZeroBenefitsToWithdraw( addr4);
 
         await printVaultBalance();
 
@@ -1653,12 +1588,15 @@ contract("Project", (accounts_) => {
 
         await setMilestoneResult( 2, true, addr4);
 
+        await withdrawNonZeroPledgerBenefits( addr3, "addr-3");
+        await withdrawNonZeroPledgerBenefits( addr4, "addr-4");
+
         await verifyNoBenefitsToWithdrawForNonPledger( addr1);
         await verifyNoBenefitsToWithdrawForNonPledger( addr2);
 
         // cannot withdraw twice
-        await verifyNoIntermediateWithdraw( addr3);
-        await verifyNoIntermediateWithdraw( addr4);
+        await verifyZeroBenefitsToWithdraw( addr3);
+        await verifyZeroBenefitsToWithdraw( addr4);
 
 
         await printTeamWalletChanges();
@@ -1670,7 +1608,7 @@ contract("Project", (accounts_) => {
             await actOnSuccessfulProjectWithBenefitPrintout();
 
         } else {
-            let pre_Balance = await getTotalBalanceTeamPlusPledgersInVault();
+            let pre_Balance = await thisProjInstance.getTeamBalanceInVault();
 
             await verifyIncorrectApproverCannotApprove( 1, addr2);
 
@@ -1684,14 +1622,6 @@ contract("Project", (accounts_) => {
         await printTeamWalletTotal(initTeamWalletBalance);
 
         return totalSumPledgedPToks;
-   }
-
-
-   async function getTotalBalanceTeamPlusPledgersInVault() {
-        let x = await thisProjInstance.getTeamBalanceInVault();
-        let y = await thisProjInstance.getPledgersBalanceInVault();
-
-        return new BN(x).add( new BN(y));
    }
 
 
@@ -1750,7 +1680,7 @@ contract("Project", (accounts_) => {
          await verifyProjectState( PROJECT_FAILED);
 
          if (pre_Balance > -1) {
-             await onProjectCompleteVerifyVaultBalance( pre_Balance, false);
+             await verifyVaultBalanceEquals( pre_Balance);
          }
 
          await verifyHasFailureRecord();
@@ -1770,7 +1700,7 @@ contract("Project", (accounts_) => {
     async function verifySuccessfulProject() {
          await verifyProjectState( PROJECT_SUCCEEDED);
 
-         await onProjectCompleteVerifyVaultBalance( 0, true); // all payment tokens moved to team wallet
+         await verifyVaultBalanceEquals( 0); // all payment tokens moved to team wallet
 
          await verifyAllMilestonesSucceeded();
 
@@ -1797,12 +1727,12 @@ contract("Project", (accounts_) => {
         await withdrawNonZeroPledgerBenefits( addr4, "addr-4");
 
         // cannot withdraw twice
-        await verifyZeroBenefitsToWithdraw( addr3, true);
-        await verifyZeroBenefitsToWithdraw( addr4, true);
+        await verifyZeroBenefitsToWithdraw( addr3);
+        await verifyZeroBenefitsToWithdraw( addr4);
 
         // cannot withdraw twice
-        await verifyZeroBenefitsToWithdraw( addr3, true);
-        await verifyZeroBenefitsToWithdraw( addr4, true);
+        await verifyZeroBenefitsToWithdraw( addr3);
+        await verifyZeroBenefitsToWithdraw( addr4);
 
         // cannot withdraw if non-pledger
         await verifyNoBenefitsToWithdrawForNonPledger( addr1);
@@ -1822,9 +1752,9 @@ contract("Project", (accounts_) => {
          }
 
          // pledger cannot fetch tokens twice
-         await verifyZeroBenefitsToWithdraw( addr3, true);
-         await verifyZeroBenefitsToWithdraw( addr4, true);
-         await verifyZeroBenefitsToWithdraw( addr2, true);
+         await verifyPledgerCannotObtainSuccessProjectTokens( addr3);
+         await verifyPledgerCannotObtainSuccessProjectTokens( addr4);
+         await verifyPledgerCannotObtainSuccessProjectTokens( addr2);
     }
 
 
@@ -1858,22 +1788,12 @@ contract("Project", (accounts_) => {
     async function verifyNoBenefitsToWithdrawForNonPledger( pledgerAddr_) {
         const expectedError = "not an active pledger";
         await expectRevert(
-                    thisProjInstance.transferProjectTokensToPledgerOnProjectSuccess( {from: pledgerAddr_} ),
+                    thisProjInstance.withdrawPledgerBenefits( {from: pledgerAddr_} ),
                     expectedError );
     }
 
 
-    async function verifyNoIntermediateWithdraw( pledgerAddr_) {
-        try {
-            await thisProjInstance.transferProjectTokensToPledgerOnProjectSuccess({ from: pledgerAddr_});
-            assert.fail('verifyNoIntermediateWithdraw');
-         } catch(err) {
-            // should fail
-         }
-    }
-
-
-    async function verifyZeroBenefitsToWithdraw( pledgerAddr_, isPedger_) {
+    async function verifyZeroBenefitsToWithdraw( pledgerAddr_) {
         let projectTokenAddr =  await thisProjInstance.getProjectTokenAddress();
 
         let projectTokenInstance = await BasicERC20.at( projectTokenAddr);
@@ -1883,12 +1803,20 @@ contract("Project", (accounts_) => {
         const projectIsCompleted_ = await thisProjInstance.projectIsCompleted();
 
         try {
-             await thisProjInstance.transferProjectTokensToPledgerOnProjectSuccess( {from: pledgerAddr_} );
-             assert.fail('verifyZeroBenefitsToWithdraw');
+             await thisProjInstance.withdrawPledgerBenefits( {from: pledgerAddr_} );
         } catch(err) {
              // revert here is legit only if project has completed
+             assert.isTrue( projectIsCompleted_, "project is not completed");
              return;
         }
+
+        let post_ = await projectTokenInstance.balanceOf( pledgerAddr_);
+
+        let diff_ = new BN(post_).sub( new BN(pre_));
+
+        //console.log(`pre_ ${pre_} , post ${post_} ,  diff ${diff_} `);
+
+        assert.isTrue( diff_.eq( new BN(0)), "non-zero benefits received");
     }
 
 
@@ -1900,17 +1828,19 @@ contract("Project", (accounts_) => {
         let pre_ = await projectTokenInstance.balanceOf( pledgerAddr_);
 
 
-//        //@BENEFIT_CALC_PARAMS
-//        const pars_ = await thisProjInstance.getBenefitCalcParams({ from: pledgerAddr_ });
-//        const allCompletedMilestonePToks_ = pars_[0];
-//        const pledgerTotalPTokInvestment_ = pars_[1];
-//        const totalPTokInvestedInProj_ = pars_[2];
-//        const numAllMilestones_ = pars_[3];
-//        const numActiveMilestonesWhenEntering_ = pars_[4];
-//        const numCompletedMiliestones_ = pars_[5];
-//        const startCompletedMilestoneInd_ = pars_[6];
-//        const benefitsFactor_ = (pledgerTotalPTokInvestment_ * numActiveMilestonesWhenEntering_ ) /
-//                                    ( totalPTokInvestedInProj_ * numAllMilestones_ );
+        //@BENEFIT_CALC_PARAMS
+        const pars_ = await thisProjInstance.getBenefitCalcParams({ from: pledgerAddr_ });
+        const allCompletedMilestonePToks_ = pars_[0];
+        const pledgerTotalPTokInvestment_ = pars_[1];
+        const totalPTokInvestedInProj_ = pars_[2];
+        const numAllMilestones_ = pars_[3];
+        const numActiveMilestonesWhenEntering_ = pars_[4];
+        const numCompletedMiliestones_ = pars_[5];
+        const startCompletedMilestoneInd_ = pars_[6];
+        const benefitsFactor_ = (pledgerTotalPTokInvestment_ * numActiveMilestonesWhenEntering_ ) /
+                                    ( totalPTokInvestedInProj_ * numAllMilestones_ );
+        //---
+
 
         let expected_ = await withdrawPledgerBenefits( pledgerAddr_);
 
@@ -1921,18 +1851,18 @@ contract("Project", (accounts_) => {
         assert.isTrue( diff_.gt('0'), "zero benefits");
 
         //@BENEFIT_CALC_PARAMS
-//        console.log(`benefit-calc-params:
-//                    completed milestone sum: ${allCompletedMilestonePToks_.toString()} ,
-//                    global num of completed milestones: ${numCompletedMiliestones_} ,
-//                    pledger start-completed-milestones ind: ${startCompletedMilestoneInd_} ,
-//                    pledger total investment: ${pledgerTotalPTokInvestment_.toString()} ,
-//                    global PTok investment: ${totalPTokInvestedInProj_.toString()}  ,
-//                    num of all milestones: ${numAllMilestones_.toString()} ,
-//                    num of active milestones on pledgers enter: ${numActiveMilestonesWhenEntering_.toString()} ,
-//                    benefits-factor: ${benefitsFactor_.toString()} ,
-//                    `);
+        console.log(`benefit-calc-params:
+                    completed milestone sum: ${allCompletedMilestonePToks_.toString()} ,
+                    global num of completed milestones: ${numCompletedMiliestones_} ,
+                    pledger start-completed-milestones ind: ${startCompletedMilestoneInd_} ,
+                    pledger total investment: ${pledgerTotalPTokInvestment_.toString()} ,
+                    global PTok investment: ${totalPTokInvestedInProj_.toString()}  ,
+                    num of all milestones: ${numAllMilestones_.toString()} ,
+                    num of active milestones on pledgers enter: ${numActiveMilestonesWhenEntering_.toString()} ,
+                    benefits-factor: ${benefitsFactor_.toString()} ,
+                    `);
 
-        console.log(`==> pledger ${name_} expected_: ${expected_.toString()} withdraw ${diff_.toString()} benefits`);
+        console.log(`==> pledger ${name_} withdraw ${diff_.toString()} benefits`);
     }
 
 
@@ -1943,10 +1873,38 @@ contract("Project", (accounts_) => {
 
          let expected_ = await thisProjInstance.calculatePledgerBenefits({from: pledgerAddr});
 
-         let receipt = await thisProjInstance.transferProjectTokensToPledgerOnProjectSuccess({from: pledgerAddr});
+         let receipt = await thisProjInstance.withdrawPledgerBenefits({from: pledgerAddr});
          expectEvent( receipt, 'PledgerBenefitsWithdrawn', { pledger: pledgerAddr });
 
          return expected_;
+    }
+
+    async function verifyPledgerCannotObtainSuccessProjectTokens( pledgerAddr_) {
+        let receipt_;
+        try {
+            receipt_ = await thisProjInstance.withdrawPledgerBenefits( {from: pledgerAddr_} );
+        } catch(err) {
+            // ok; not a pledger
+            return;
+        }
+
+        // if is a pledger: verify zero project-token benefits
+
+        await verifyZeroBenefitsToWithdrawImpl( pledgerAddr_, receipt_);
+    }
+
+
+    async function verifyZeroBenefitsToWithdrawImpl( pledgerAddr_, receipt_) {
+        let actualMintedProjectTokens_ = 0;
+        let actualPledgerAddr_;
+        truffleAssert.eventEmitted( receipt_, 'PledgerBenefitsWithdrawn', (ev) => {
+            actualPledgerAddr_ = ev.pledger;
+            actualMintedProjectTokens_ = ev.numProjectTokens;
+            return true;
+        });
+
+        assert.equal( actualPledgerAddr_, pledgerAddr_, "bad pledger");
+        assert.equal( actualMintedProjectTokens_.toString(), 0, "project tokens were minted");
     }
 
     function logExpectedError(err) {
@@ -1983,33 +1941,14 @@ contract("Project", (accounts_) => {
         return new BN(cur_balance).sub( new BN( prev_balance));
    }
 
-
-   async function verifyVaultWasEmptied() {
-        const teamBalance = await thisProjInstance.getTeamBalanceInVault();
-        const pledgersBalance = await thisProjInstance.getPledgersBalanceInVault();
-
-        console.log(`post teamBalance: ${teamBalance} , post pledgersBalance: ${pledgersBalance}`);
-
-        assert.isTrue( teamBalance.toString() == '0', 'verifyVaultWasEmptied: teamBalance');
-
-        assert.isTrue( pledgersBalance.toString() == '0', 'verifyVaultWasEmptied: pledgersBalance');
-   }
-
-
    async function verifyOnSuccessPTokBalances( totalSumPledgedPToks) {
-         await verifyProjectState( PROJECT_SUCCEEDED);
-
-         await verifyVaultWasEmptied();
-
          const diff_teamPTokBalance = await diffTeamPTokBalance( pre_teamPTokBalance);
          const diff_platformPTokBalance = await diffPlatformPTokBalance( pre_platformPTokBalance);
 
+         console.log(`totalSumPledgedPToks: ${totalSumPledgedPToks} , platformCutPromils: ${platformCutPromils}`);
+
          const expected_platformPTokBalanceDiff = (new BN(totalSumPledgedPToks).mul( new BN(platformCutPromils))).div( new BN(1000));
          const expected_teamPTokBalanceDiff = new BN(totalSumPledgedPToks).sub( expected_platformPTokBalanceDiff);
-
-         console.log(`totalSumPledgedPToks: ${totalSumPledgedPToks} , platformCutPromils: ${platformCutPromils}`);
-         console.log(`diff_teamPTokBalance: ${diff_teamPTokBalance} , diff_platformPTokBalance: ${diff_platformPTokBalance}`);
-         console.log(`expected_platformPTokBalanceDiff: ${expected_platformPTokBalanceDiff} , expected_teamPTokBalanceDiff: ${expected_teamPTokBalanceDiff}`);
 
          assert.equal( expected_teamPTokBalanceDiff.toString(), diff_teamPTokBalance.toString(), "bad team diff");
          assert.equal( expected_platformPTokBalanceDiff.toString(), diff_platformPTokBalance.toString(), "bad platform diff");

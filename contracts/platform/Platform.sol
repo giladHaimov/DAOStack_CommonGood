@@ -42,6 +42,8 @@ contract Platform is ProjectFactory, IPlatform, /*Ownable, Pausable,*/ Reentranc
 
     event VaultAddressApprovedStatusSet(address indexed vaultAddress_, bool indexed approved_);
 
+    event ProjectTokenApprovedStatusSet( address indexed projectTokenAddress_, bool indexed approved_);
+
     event PlatformTokenChanged(address platformToken, address oldToken);
 
     event PlatformCutReceived(address indexed senderProject, uint value);
@@ -93,8 +95,14 @@ contract Platform is ProjectFactory, IPlatform, /*Ownable, Pausable,*/ Reentranc
  * @event: VaultAddressApprovedStatusSet
  */
     function markVaultAsApproved(address vaultAddress_, bool isApproved_) external onlyOwner { //@PUBFUNC
-        approvedVaults[vaultAddress_] = isApproved_;
-        emit VaultAddressApprovedStatusSet(vaultAddress_, isApproved_);
+        approvedVaults[ vaultAddress_] = isApproved_;
+        emit VaultAddressApprovedStatusSet( vaultAddress_, isApproved_);
+    }
+
+
+    function markProjectTokenAsApproved(address projectTokenAddress_, bool isApproved_) external onlyOwner { //@PUBFUNC
+        approvedProjectTokens[ projectTokenAddress_] = isApproved_;
+        emit ProjectTokenApprovedStatusSet( projectTokenAddress_, isApproved_);
     }
 
 /*
@@ -157,7 +165,11 @@ contract Platform is ProjectFactory, IPlatform, /*Ownable, Pausable,*/ Reentranc
     } 
 
     function _isAnApprovedVault(address projectVault_) internal override view returns(bool) {
-        return approvedVaults[address(projectVault_)];
+        return approvedVaults[ address(projectVault_)];
+    }
+
+    function _isAnApprovedExternalProjectToken(address projectToken_) internal override view returns(bool) {
+        return approvedProjectTokens[ address(projectToken_)];
     }
 
 }

@@ -26,5 +26,9 @@ interface IProject {
 
     function getProjectState() external view returns(ProjectState);
 
-    function getVaultBalance() external view returns(uint);
+    function projectHasFailed() external view returns(bool);
+
+    function getTeamBalanceInVault() external view returns(uint);
+
+    function getPledgersBalanceInVault() external view returns(uint);
 }

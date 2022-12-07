@@ -6,18 +6,24 @@ import "../project/PledgeEvent.sol";
 
 interface IVault {
 
-    function transferPToksToTeamWallet(uint sum_, uint platformCutPromils_, address platformAddr_) external returns(uint,uint);
+    function transferAllVaultFundsToTeam( uint platformCutPromils_, address platformAddr_) external returns(uint,uint);
 
-    function transferPaymentTokensToPledger( address pledgerAddr_, uint sum_) external returns(uint);
+    function transferPToksToPledger( address pledgerAddr_, uint sum_, bool gracePeriodExit_) external returns(uint);
 
-    function increaseBalance( uint numPaymentTokens_) external;
+    function addNewPledgePToks( uint numPaymentTokens_) external;
 
-    function vaultBalance() external view returns(uint);
+    function vaultBalance() external view returns(uint); // ==pledger balance in vault
 
-    function getTotalReceivedPToks() external view returns(uint);
+    function getTeamBalanceInVault() external view returns(uint);
+
+    function getTotalPToksInvestedInProject() external view returns(uint);
 
     function changeOwnership( address project_) external;
     function getOwner() external view returns (address);
+
+    function onFailureMoveTeamFundsToPledgers() external;
+
+    function assignFundsFromPledgersToTeam( uint sum_) external;
 
     function initialize( address owner_) external;
 }

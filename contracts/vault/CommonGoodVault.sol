@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+import "../@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import "../@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -11,7 +12,7 @@ import "../project/PledgeEvent.sol";
 import "../utils/InitializedOnce.sol";
 
 
-contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
+contract CommonGoodVault is IVault, ERC165Storage, ReentrancyGuard, InitializedOnce {
 
     event PTokPlacedInVault( uint sum);
 
@@ -19,46 +20,75 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
     event PTokTransferredToPledger( uint sumToTransfer_, address indexed pledgerAddr_);
 
+    event TeamFundsMovedToPledgers( uint origTeamPTokFunds, uint newPledgersPTokFunds);
+
+    event MilestoneFundsAssignedToTeam( uint sumToAssign, uint teamPTokFunds, uint pledgersPTokFunds);
+
     error VaultOwnershipCannotBeTransferred( address _owner, address newOwner);
 
     error VaultOwnershipCannotBeRenounced();
     //----
 
-    uint public numPToksInVault; // all deposits from all pledgers
+    uint public pledgersPTokFunds;
+    uint public teamPTokFunds;
 
-    uint public totalReceivedPToks; // sum of all PToks added into vault
+    uint public totalPToksInvestedInProject; // sum of all PToks added into vault
 
 
     constructor() {
         _initialize();
     }
 
+
     function initialize(address owner_) external override onlyIfNotInitialized { //@PUBFUNC called by platform //@CLONE
-        markAsInitialized(owner_);
+        _markAsInitialized(owner_);
         _initialize();
     }
 
     function _initialize() private {
         _registerInterface( type(IVault).interfaceId);
-        numPToksInVault = 0;
-        totalReceivedPToks = 0;
+        pledgersPTokFunds = 0;
+        teamPTokFunds = 0;
+        totalPToksInvestedInProject = 0;
     }
 
 
-    function increaseBalance( uint numPaymentTokens_) external override onlyOwner {
-        verifyInitialized();
-        _addToBalance( numPaymentTokens_);
+    function addNewPledgePToks( uint numPaymentTokens_) external override nonReentrant onlyOwner {  //@PUBFUNC
+        // due to new pledge event; MUST be followed by PTok transfer from pledger to vault
+        _verifyInitialized();
+        _addToPledgersFunds( numPaymentTokens_);
         emit PTokPlacedInVault( numPaymentTokens_);
     }
 
 
-    function transferPaymentTokensToPledger( address pledgerAddr_, uint numPaymentTokens_)
-                                                external override onlyOwner returns(uint) {
-        // can only be invoked by connected project
-        // @PROTECT: DoS, Re-entry
-        verifyInitialized();
 
-        uint actuallyRefunded_ = _transferFromVaultTo( pledgerAddr_, numPaymentTokens_);
+    function onFailureMoveTeamFundsToPledgers() external override nonReentrant onlyOwner {  //@PUBFUNC
+        _verifyInitialized();
+
+        require( _getProject().projectHasFailed(), "project not failed");
+
+        uint origTeamPTokFunds_ = teamPTokFunds;
+
+        teamPTokFunds = 0;
+        pledgersPTokFunds += origTeamPTokFunds_;
+
+        emit TeamFundsMovedToPledgers( origTeamPTokFunds_, pledgersPTokFunds);
+    }
+
+
+    function transferPToksToPledger( address pledgerAddr_, uint numPaymentTokens_, bool gracePeriodExit_)
+                                        external override nonReentrant onlyOwner returns(uint) {  //@PUBFUNC
+        // invoked due to project failure or grace-period exit
+
+        // @PROTECT: DoS, Re-entry
+        _verifyInitialized();
+
+        uint actuallyRefunded_ = _transferFromPledgersFundsTo( pledgerAddr_, numPaymentTokens_);
+
+        if (gracePeriodExit_) {
+            // subtract from total-investment funds transferred to pledger on grace-period exit
+            totalPToksInvestedInProject -= actuallyRefunded_;
+        }
 
         emit PTokTransferredToPledger( numPaymentTokens_, pledgerAddr_);
 
@@ -66,25 +96,41 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
     }
 
 
-    function transferPToksToTeamWallet( uint totalSumToTransfer_, uint platformCutPromils_, address platformAddr_)
-                                         external override onlyOwner returns(uint,uint) { //@PUBFUNC
-        // called by project on successful milestone
-        // @PROTECT: DoS, Re-entry
-        verifyInitialized();
+    function assignFundsFromPledgersToTeam( uint sumToAssign_) external nonReentrant onlyOwner {
+        // called on milestone success
+        _verifyInitialized();
 
-        uint actuallyTransferred_ = calcActualPTokNumAvailableForTransfer( totalSumToTransfer_);
+        pledgersPTokFunds -= sumToAssign_;
+        teamPTokFunds += sumToAssign_;
+
+        emit MilestoneFundsAssignedToTeam( sumToAssign_, teamPTokFunds, pledgersPTokFunds);
+    }
+
+
+    function transferAllVaultFundsToTeam( uint platformCutPromils_, address platformAddr_)
+                                            external override nonReentrant onlyOwner returns(uint,uint) { //@PUBFUNC
+        // called on project success to pass *all* funds in vault (team+pledgers) to team wallet, while also transferring platform cut
+        // @PROTECT: DoS, Re-entry
+        _verifyInitialized();
+
+        uint totalSumToTransfer_ = teamPTokFunds + pledgersPTokFunds;
+
+        teamPTokFunds = 0;
+        pledgersPTokFunds = 0;
+
+        totalSumToTransfer_ = _correctAccordingTotalNumPToksOwnedByVault( totalSumToTransfer_);
 
         address teamWallet_ = getTeamWallet();
 
-        uint platformCut_ = (actuallyTransferred_ * platformCutPromils_) / 1000;
+        uint platformCut_ = (totalSumToTransfer_ * platformCutPromils_) / 1000;
 
-        uint teamCut_ = actuallyTransferred_ - platformCut_;
+        uint teamCut_ = totalSumToTransfer_ - platformCut_;
 
 
-        // transfer from vault to team
-        _transferFromVaultTo( teamWallet_, teamCut_);
+        _erc20TransferTo( teamWallet_, teamCut_);
 
-        _transferFromVaultTo( platformAddr_, platformCut_);
+        _erc20TransferTo( platformAddr_, platformCut_);
+
 
         emit PTokTransferredToTeamWallet( teamCut_, teamWallet_, platformCut_, platformAddr_);
 
@@ -92,39 +138,43 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
     }
 
 
-    function _transferFromVaultTo( address receiverAddr_, uint numPToksToTransfer_) private returns(uint) {
-        uint actuallyTransferred_ = calcActualPTokNumAvailableForTransfer( numPToksToTransfer_);
+    function _transferFromPledgersFundsTo( address receiverAddr_, uint numPToksToTransfer_) private returns(uint) {
 
-        _subtractFromBalance( actuallyTransferred_);
+        numPToksToTransfer_ = _correctAccordingTotalPledgersFunds( numPToksToTransfer_);
 
+        numPToksToTransfer_ = _correctAccordingTotalNumPToksOwnedByVault( numPToksToTransfer_);
+
+
+        pledgersPTokFunds -= numPToksToTransfer_;
+
+        _erc20TransferTo( receiverAddr_, numPToksToTransfer_);
+
+        return numPToksToTransfer_;
+    }
+
+
+    function _erc20TransferTo( address receiverAddr_, uint sumToTransfer_) private {
         address paymentTokenAddress_ = getPaymentTokenAddress();
-
-        bool transferred_ = IERC20( paymentTokenAddress_).transfer( receiverAddr_, actuallyTransferred_);
-        require( transferred_, "Failed to transfer payment tokens");
-
-        return actuallyTransferred_;
+        bool transferred_ = IERC20( paymentTokenAddress_).transfer( receiverAddr_, sumToTransfer_);
+        require( transferred_, "Failed to transfer PTok funds");
     }
 
 
-
-    function calcActualPTokNumAvailableForTransfer( uint shouldBeTranserred_) private view returns(uint) {
-
-        uint actuallyTransferred_ = shouldBeTranserred_;
-
-        // 1. correct by num PToks in vault
-        if (actuallyTransferred_ > numPToksInVault) {
-            actuallyTransferred_ = numPToksInVault;
+    function _correctAccordingTotalPledgersFunds( uint sum_) private view returns(uint) {
+        if (sum_ > pledgersPTokFunds) {
+            sum_ = pledgersPTokFunds;
         }
+        return sum_;
+    }
 
-        // 2. correct by num PToks actually owned by vault
+
+    function _correctAccordingTotalNumPToksOwnedByVault( uint sum_) private view returns(uint) {
         uint totalPToksOwnedByVault_ = _totalNumPToksOwnedByVault();
-        if (actuallyTransferred_ > totalPToksOwnedByVault_) {
-            actuallyTransferred_ = totalPToksOwnedByVault_;
+        if (sum_ > totalPToksOwnedByVault_) {
+            sum_ = totalPToksOwnedByVault_;
         }
-
-        return actuallyTransferred_;
+        return sum_;
     }
-
 
     function _totalNumPToksOwnedByVault() private view returns(uint) {
         address paymentTokenAddress_ = getPaymentTokenAddress();
@@ -135,13 +185,16 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
 
 
     function getPaymentTokenAddress() private view returns(address) {
-        address project_ = getOwner();
-        return IProject(project_).getPaymentTokenAddress();
+        return _getProject().getPaymentTokenAddress();
     }
 
     function getTeamWallet() private view returns(address) {
+        return _getProject().getTeamWallet();
+    }
+
+    function _getProject() private view returns(IProject) {
         address project_ = getOwner();
-        return IProject(project_).getTeamWallet();
+        return IProject(project_);
     }
 
 
@@ -150,17 +203,24 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
     }
 
     function vaultBalance() public view override returns(uint) {
-        return numPToksInVault;
+        //@gilad: returned balance shouldonly contain the pledgers portion;
+        // the team portion should be treated as if it was effectively already transmitted to the team wallet
+        return pledgersPTokFunds;
     }
 
-    function getTotalReceivedPToks() public view override returns(uint) {
-        return totalReceivedPToks;
+
+    function getTeamBalanceInVault() external override view returns(uint) {
+        return teamPTokFunds;
     }
 
+    function getTotalPToksInvestedInProject() public view override returns(uint) {
+        return totalPToksInvestedInProject;
+    }
 
     function getOwner() public override( InitializedOnce, IVault) view returns (address) {
         return InitializedOnce.getOwner();
     }
+
 
 
     //------ retain connected project ownership (behavior declaration)
@@ -169,14 +229,9 @@ contract CommonGoodVault is IVault, ERC165Storage, InitializedOnce {
         revert VaultOwnershipCannotBeRenounced();
     }
 
-    function _addToBalance( uint toAdd_) private {
-        totalReceivedPToks += toAdd_;
-        numPToksInVault += toAdd_;
-    }
-
-    function _subtractFromBalance( uint toSubtract_) private {
-        // do not subtract from totalReceivedPToks
-        numPToksInVault -= toSubtract_;
+    function _addToPledgersFunds( uint toAdd_) private {
+        totalPToksInvestedInProject += toAdd_;
+        pledgersPTokFunds += toAdd_;
     }
 
 }

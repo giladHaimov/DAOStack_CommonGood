@@ -14,9 +14,12 @@ import "../milestone/Milestone.sol";
 import "../milestone/MilestoneApprover.sol";
 import "../vault/IVault.sol";
 import "../platform/IPlatform.sol";
+import "../utils/InitializedOnce.sol";
 
 
-abstract contract MilestoneOwner {
+//hhhh go over all @INTERMEDIATE_BENEFITS_DISABLED
+
+abstract contract MilestoneOwner is InitializedOnce {
 
     using SafeCast for uint;
 
@@ -56,6 +59,8 @@ abstract contract MilestoneOwner {
     error CanOnlyBeInvokedByAMilestoneApprover(uint milestoneIndex, address externalApprover, address msgSender);
 
     error PrerequisitesWasNotMet(int prerequisiteIndex, uint milestoneIndex);
+
+    error MilestoneIsNotOverdue(uint milestoneIndex, uint time);
 
     //----
 
@@ -108,27 +113,24 @@ abstract contract MilestoneOwner {
                                                 external openForAll onlyIfProjectNotCompleted
                                                 onlyIfOnchain( milestoneIndex_)
                                                 onlyIfUnresolved( milestoneIndex_) /*even if paused*/ { //@PUBFUNC
-
-        uint initial_numCompleted = successfulMilestoneIndexes.length;
+        _verifyInitialized();
 
         Milestone storage milestone_ = milestoneArr[milestoneIndex_];
 
-        if (_failIfOverdue( milestoneIndex_, milestone_)) {
-            _onProjectFailed();
+        if (_failProjectIfOverdue( milestoneIndex_, milestone_)) {
+            return; // project now failed
         } else if (_onchainMilestoneSucceeded( milestoneIndex_, milestone_)) {
             _onMilestoneSuccess( milestone_, milestoneIndex_);
         } else {
-            emitOnchainMilestoneNotYetReached( milestoneIndex_, milestone_);
+            _emitOnchainMilestoneNotYetReached( milestoneIndex_, milestone_);
         }
-
-        require( successfulMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
     }
 
 
-    function emitOnchainMilestoneNotYetReached( uint milestoneIndex_, Milestone storage milestone_) private {
+    function _emitOnchainMilestoneNotYetReached( uint milestoneIndex_, Milestone storage milestone_) private {
         MilestoneApprover storage approver_ = milestone_.milestoneApprover;
         if (approver_.fundingPTokTarget > 0) {
-            uint totalReceivedPToks_ = _getProjectVault().getTotalReceivedPToks();
+            uint totalReceivedPToks_ = _getProjectVault().getTotalPToksInvestedInProject();
             emit OnchainMilestoneNotYetReached( milestoneIndex_, totalReceivedPToks_, approver_.fundingPTokTarget, 0, 0);
         } else {
             emit OnchainMilestoneNotYetReached( milestoneIndex_, 0, 0, _getNumPledgersSofar(), approver_.targetNumPledgers);
@@ -157,18 +159,36 @@ abstract contract MilestoneOwner {
                                         onlyIfProjectNotCompleted
                                         onlyExternalApprover( milestoneIndex_)
                                         onlyIfUnresolved( milestoneIndex_) /*even if paused*/ { //@PUBFUNC
-
-        uint initial_numCompleted = successfulMilestoneIndexes.length;
+        _verifyInitialized();
 
         Milestone storage milestone_ = milestoneArr[milestoneIndex_];
 
-        if (_failIfOverdue( milestoneIndex_, milestone_)) {
-            _onProjectFailed();
+        if (_failProjectIfOverdue( milestoneIndex_, milestone_)) {
+            return; // project now failed
         } else {
             _handleExternalApproverDecision( milestoneIndex_, milestone_, succeeded, reason);
         }
+    }
 
-        require( successfulMilestoneIndexes.length <= initial_numCompleted+1, "single milestone approved");
+
+/*
+ * @title onMilestoneOverdue()
+ *
+ * @dev Allows 'all' to inform the project on an overdue milestone - either external of onchain,resulting on project failure
+ * Project must be not-completed
+ *
+ * @event: MilestoneIsOverdueEvent
+ */ //@DOC4
+    function onMilestoneOverdue(uint milestoneIndex_) external openForAll onlyIfProjectNotCompleted  {//@PUBFUNC: also notPaused??
+        _verifyInitialized();
+
+        Milestone storage milestone_ = milestoneArr[ milestoneIndex_];
+
+        if (_failProjectIfOverdue( milestoneIndex_, milestone_)) {
+            return; // project now failed
+        } else {
+            revert MilestoneIsNotOverdue( milestoneIndex_, block.timestamp);
+        }
     }
 
 
@@ -182,7 +202,7 @@ abstract contract MilestoneOwner {
             _onMilestoneSuccess( milestone_, milestoneIndex_);
             emit MilestoneSucceededByExternalApprover( milestoneIndex_, reason);
         } else {            
-            _onMilestoneFailure( milestone_);
+            _onExternalMilestoneFailure( milestone_);
             emit MilestoneFailedByExternalApprover( milestoneIndex_, reason);
         } 
     }
@@ -198,7 +218,7 @@ abstract contract MilestoneOwner {
         _verifyPrerequisiteWasMet( milestoneIndex_);
 
         if (approver_.fundingPTokTarget > 0) {
-            uint totalReceivedPToks_ = _getProjectVault().getTotalReceivedPToks();
+            uint totalReceivedPToks_ = _getProjectVault().getTotalPToksInvestedInProject();
             if (totalReceivedPToks_ >= approver_.fundingPTokTarget) {
                 emit MilestoneSucceededFunding( approver_.fundingPTokTarget, totalReceivedPToks_);
                 return true;
@@ -220,14 +240,21 @@ abstract contract MilestoneOwner {
 
         _verifyPrerequisiteWasMet( milestoneIndex_);
 
-        _verifyEnoughFundsInVault( milestoneIndex_);
+
+
+
+        // TODO >> uncomment test below when switching to periodical-benefits model @INTERMEDIATE_BENEFITS_DISABLED
+        //_verifyEnoughFundsInVault( milestoneIndex_);
+        //------------------
+
+
 
         _setMilestoneResult( milestone_, MilestoneResult.SUCCEEDED);
 
         // add to completed arr
         successfulMilestoneIndexes.push( milestoneIndex_);
 
-        _transferMilestoneFundsToTeam( milestone_);
+        _assignMilestoneFundsToTeamVault( milestone_);
 
         if (successfulMilestoneIndexes.length == milestoneArr.length) { //@DETECT_PROJECT_SUCCESS
             _onProjectSucceeded();
@@ -237,35 +264,29 @@ abstract contract MilestoneOwner {
     }
 
 
-    function getNumberOfSuccessfulMilestones() external view returns(uint) {
+    function getNumberOfSuccessfulMilestones() public view returns(uint) {
         return successfulMilestoneIndexes.length;
     }
 
-    function _transferMilestoneFundsToTeam( Milestone storage milestone_) private {
-        uint value_ = milestone_.pTokValue;
+
+    function _assignMilestoneFundsToTeamVault( Milestone storage milestone_) private {
+
+        // TODO >> note that when in @INTERMEDIATE_BENEFITS_DISABLED noactual funds leave the vault, but rather counters are updates
 
         // pass milestone funds from vault to teamWallet
         require( address(this) == _getProjectVault().getOwner(), "proj contract must own vault");
 
-        _transferPaymentTokenToTeam( value_, getPlatformCutPromils());
+        _getProjectVault().assignFundsFromPledgersToTeam( milestone_.pTokValue);
     }
 
 
-    function _transferPaymentTokenToTeam( uint value_, uint platformCutPromils_) internal {
-        address platformAddr_ = _getPlatformAddress();
-
-        (uint teamCut_, uint platformCut_) = _getProjectVault().transferPToksToTeamWallet( value_, platformCutPromils_, _getPlatformAddress());
-
-        IPlatform( platformAddr_).onReceivePaymentTokens( paymentTokenAddress, platformCut_);
-    }
-
-
-    function _failIfOverdue( uint milestoneIndex_, Milestone storage milestone_) internal returns(bool) {
+    function _failProjectIfOverdue( uint milestoneIndex_, Milestone storage milestone_) private returns(bool) {
 
         require( milestone_.result == MilestoneResult.UNRESOLVED, "milestone already resolved"); // must check first!
 
         if (milestoneIsOverdue( milestoneIndex_)) {
             _setMilestoneResult( milestone_,  MilestoneResult.FAILED);
+            _onProjectFailed();
             emit MilestoneIsOverdueEvent(milestoneIndex_, milestone_.dueDate, block.timestamp);
             return true;
         }
@@ -273,7 +294,7 @@ abstract contract MilestoneOwner {
         return false;
     }
 
-    function _onMilestoneFailure( Milestone storage milestone_) private {
+    function _onExternalMilestoneFailure( Milestone storage milestone_) private {
         _setMilestoneResult( milestone_,  MilestoneResult.FAILED);
         _onProjectFailed();
     }
@@ -308,7 +329,7 @@ abstract contract MilestoneOwner {
         return milestoneArr[ uint(prerequisiteIndex_)].result != MilestoneResult.SUCCEEDED;
     }
 
-    function getNumberOfMilestones() external view returns(uint) {
+    function getNumberOfMilestones() public view returns(uint) {
         return milestoneArr.length;
     }
 
@@ -330,7 +351,7 @@ abstract contract MilestoneOwner {
 
 
     function milestoneIsOverdue( uint milestoneIndex_) public view returns(bool) {
-        // no action taken, just check
+        // no action taken, check only
         return block.timestamp > (milestoneArr[ milestoneIndex_].dueDate + DUE_DATE_GRACE_PERIOD);
     }
 

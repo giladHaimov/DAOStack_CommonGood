@@ -60,11 +60,32 @@ module.exports = {
       disableConfirmationListener: true,
       skipDryRun: true
     },
+    arbitrum: {
+      networkCheckTimeout: 10000,
+      timeoutBlocks: 200,
+      provider: () => new HDWalletProvider( mnemonic, "https://arbitrum-mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff"),
+      network_id: 42161,
+      gas: 6721975,
+      gasPrice: 30675146827,
+      pollingInterval: 1800000,
+      disableConfirmationListener: true,
+      skipDryRun: true
+    },
+    optimism: {
+      networkCheckTimeout: 10000,
+      timeoutBlocks: 200,
+      provider: () => new HDWalletProvider( mnemonic, "https://optimism-mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff"),
+      network_id: 10,
+      gas: 6721975,
+      gasPrice: 30675146827,
+      pollingInterval: 1800000,
+      disableConfirmationListener: true,
+      skipDryRun: true
+    },
     mainnet: {
       networkCheckTimeout: 50000, // 50 secs
       timeoutBlocks: 200,
       provider: function() {
-//        return new HDWalletProvider( mnemonic, "https://mainnet.infura.io/v3/46b5f53c4fb7487f8a964120bcfb43ff");
         return new HDWalletProvider( mnemonic, "wss://mainnet.infura.io/ws/v3/46b5f53c4fb7487f8a964120bcfb43ff");
       },
       network_id: 1,
