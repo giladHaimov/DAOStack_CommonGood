@@ -136,7 +136,12 @@ contract("Deployment", (accounts_) => {
    }
 
    async function verifyNotInBetaMode() {
-        const inBetaMode_ = await platformInst.inBetaMode();
+        let inBetaMode_ = await platformInst.inBetaMode();
+        if (inBetaMode_) {
+            // try to change:
+            await platformInst.setBetaMode(false);
+            inBetaMode_ = await platformInst.inBetaMode();
+        }
         assert.isFalse( inBetaMode_ , "must not be in beta mode");
    }
 

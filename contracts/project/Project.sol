@@ -546,7 +546,8 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable /*Initia
     }
 
 
-    function _withdrawPledgerBenefits() private onlyIfActivePledger { //hhhh new func > make external
+    //TODO > make external when @INTERMEDIATE_BENEFITS_DISABLED active
+    function _withdrawPledgerBenefits() private onlyIfActivePledger {
 
 
         // TODO >> remove to switch to periodical-benefits model @INTERMEDIATE_BENEFITS_DISABLED
@@ -592,7 +593,7 @@ contract Project is IProject, MilestoneOwner, ReentrancyGuard, Pausable /*Initia
     }
 
 
-    function calculatePledgerBenefits() public view onlyIfActivePledger returns(uint) { //hhhh new func
+    function calculatePledgerBenefits() public view onlyIfActivePledger returns(uint) {
         // calculate unpaid benefits for all unpaid successful milestones
         address pledgerAddr_ = msg.sender;
 
